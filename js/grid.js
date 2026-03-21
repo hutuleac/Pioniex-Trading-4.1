@@ -147,12 +147,14 @@ export function assessGridViability(atrPct, adx, rsi, bbBw, structure) {
  */
 export function getTickerGridProfile(ticker) {
   const profiles = {
-    BTC: { profile: 'stable',   rangeMultiplier: 2.5, maxGrids: 30 },
-    ETH: { profile: 'stable',   rangeMultiplier: 2.5, maxGrids: 30 },
-    BNB: { profile: 'stable',   rangeMultiplier: 2.5, maxGrids: 30 },
-    SOL: { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
-    TRX: { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
-    SUI: { profile: 'volatile', rangeMultiplier: 3.5, maxGrids: 50 },
+    BTC:  { profile: 'stable',   rangeMultiplier: 2.5, maxGrids: 30 },
+    ETH:  { profile: 'stable',   rangeMultiplier: 2.5, maxGrids: 30 },
+    BNB:  { profile: 'stable',   rangeMultiplier: 2.5, maxGrids: 30 },
+    SOL:  { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
+    TRX:  { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
+    SUI:  { profile: 'volatile', rangeMultiplier: 3.5, maxGrids: 50 },
+    HYPE: { profile: 'volatile', rangeMultiplier: 3.5, maxGrids: 50 },
+    XMR:  { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
   };
   return profiles[ticker] ?? { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 };
 }
