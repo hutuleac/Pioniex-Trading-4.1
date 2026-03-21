@@ -44,6 +44,8 @@ body::before{
   padding:4px 12px;font-family:'IBM Plex Mono',monospace;font-size:.78rem;color:var(--text2);
   white-space:nowrap;
 }
+.version-pill{color:var(--cyan2);letter-spacing:.04em;font-size:.75rem;
+}
 .dot{width:7px;height:7px;border-radius:50%;background:var(--dim);}
 .dot.live{background:var(--green);box-shadow:0 0 6px var(--green);animation:pulse 2s infinite;}
 .dot.loading{background:var(--yellow);animation:pulse .6s infinite;}

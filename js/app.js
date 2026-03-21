@@ -372,4 +372,7 @@ document.getElementById('legend-grid').innerHTML = LEGENDS.map(([n,d]) =>
 // Init header tooltips
 initHeaderTooltips();
 
+// Version badge
+document.getElementById('app-version').textContent = `v${CFG.APP_VERSION}`;
+
 fetchAndDisplay();
