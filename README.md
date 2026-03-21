@@ -15,6 +15,8 @@ No build tools, no npm, no backend — pure ES Modules served over any static HT
 - **Symbol Manager** — add/remove symbols at runtime; Binance or Bybit used automatically per symbol
 - **Auto-refresh** — fetches every 20 minutes; countdown timer shown in topbar
 - **Reference Guide** — color legend, score weights, and collapsible indicator glossary
+- **Grid Bot Advisor** — per-ticker Spot Grid setup guide: recommended range (ATR-based), grid count, mode (Arithmetic/Geometric), net profit/grid, SL/TP levels, worst-case drawdown, and a copyable setup checklist. Includes collapsible risk notice with dynamic ADX/ATR/RSI warnings per ticker
+- **Compact Metrics View** — Full Metrics table defaults to 15 key columns; "⊞ Show All" toggle reveals all 25 on demand
 
 ---
 
@@ -41,7 +43,8 @@ Then open `http://localhost:8080/` in your browser.
 ├── css/
 │   └── style.css       # All styles
 └── js/
-    ├── config.js       # CFG constants, API base URLs, SIG_TIPS, LEGENDS
+    ├── config.js       # CFG + GRID_CONFIG constants, API base URLs, SIG_TIPS, LEGENDS, localStorage helpers
+    ├── grid.js         # Pure grid bot calculations (9 exported functions, no side effects)
     ├── api.js          # tryFetch, Binance/Bybit endpoints, unified fetch wrappers
     ├── indicators.js   # All pure calculations + interpretSignals, calcScore, calcBotParams
     ├── ui.js           # Formatters and DOM string builders
@@ -55,6 +58,7 @@ index.html
   └── css/style.css
   └── js/app.js
         ├── js/config.js
+        ├── js/grid.js         (no dependencies — pure functions)
         ├── js/api.js          → config.js
         ├── js/indicators.js   → config.js, api.js
         └── js/ui.js           → config.js, indicators.js
@@ -138,7 +142,20 @@ TP1_ATR_MULT         : 3.0
 TP2_ATR_MULT         : 5.25
 ```
 
-Default symbols: BTC, ETH, SOL, XRP, ZEC — all editable at runtime via the symbol bar.
+Grid bot parameters are in `GRID_CONFIG` (also in `js/config.js`):
+
+```js
+DEFAULT_CAPITAL        : 500    // USDT per session (overridable via Config modal → saved in localStorage)
+FEE_PCT                : 0.001  // 0.1% per side (0.2% round-trip per grid)
+TARGET_NET_PCT         : 0.008  // 0.8% target net profit per grid
+MIN_NET_PCT            : 0.006  // minimum viable net profit per grid
+SL_BUFFER_PCT          : 0.12   // SL sits 12% below range lower bound
+TP_BUFFER_PCT          : 0.05   // TP sits 5% above range upper bound
+ATR_MULTIPLIER_DEFAULT : 2.5    // range = price ± (ATR% × multiplier)
+GEOMETRIC_THRESHOLD_PCT: 20     // use Geometric mode when range width ≥ 20%
+```
+
+Default symbols: BTC, ETH, BNB, SOL, TRX, SUI — all editable at runtime via the symbol bar.
 
 ---
 

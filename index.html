@@ -55,10 +55,10 @@
 
 <!-- PART 2: FULL METRICS (collapsible) -->
 <div class="section">
-  <div class="section-title collapsible-toggle" data-target="full-metrics-wrap" style="cursor:pointer">Full Metrics <span style="font-size:.65rem;opacity:.6">▾ click to collapse</span></div>
+  <div class="section-title collapsible-toggle" data-target="full-metrics-wrap" style="cursor:pointer">Full Metrics <span style="font-size:.65rem;opacity:.6">▾ click to collapse</span> <button id="btn-toggle-cols" class="btn" style="font-size:.72rem;padding:3px 10px;min-height:unset;letter-spacing:.04em;text-transform:none;font-weight:600" onclick="event.stopPropagation()">⊞ Show All</button></div>
   <div id="full-metrics-wrap">
   <div class="table-wrap">
-    <table>
+    <table class="main-metrics-table">
       <thead><tr>
         <th>Symbol</th>
         <th><span class="tip">Price<span class="tiptext">Mark price in USDT. Binance Futures primary, Bybit fallback. Updated every 20 min.</span></span></th>
@@ -133,6 +133,10 @@
     <div class="empty">No asset has reached score 8.0 yet</div>
   </div>
 </div>
+
+<!-- GRID BOT ADVISOR -->
+<div id="grid-risk-notice"></div>
+<div id="grid-panel"></div>
 
 <!-- LEGEND -->
 <div class="section">

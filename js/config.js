@@ -58,3 +58,24 @@ export const LEGENDS = [
   ["FVG (Fair Value Gap)","Institutional imbalance on 4H. ★=confirmed by structure. BULL FVG=support, BEAR=resistance."],
   [`Score 0–10`,`Score ≥ ${CFG.SCORE_BOT_MIN} activates bot params. Components: Trend Macro(2), Swing(1.5), Pressure(2), CVD(1), Setup(2), EMA(0.5), FVG(0.5), POC Conf(0.5). API: Binance primary, Bybit fallback.`],
 ];
+
+// ══════════════════════════════════════════════════════════════════
+//  GRID BOT CONFIG
+// ══════════════════════════════════════════════════════════════════
+export const GRID_CONFIG = {
+  DEFAULT_CAPITAL      : 500,
+  FEE_PCT              : 0.001,   // 0.1% per side, 0.2% round-trip per grid
+  TARGET_NET_PCT       : 0.008,   // 0.8% target net profit per grid
+  MIN_NET_PCT          : 0.006,   // minimum viable profit per grid
+  SL_BUFFER_PCT        : 0.12,    // SL sits 12% below lower bound
+  TP_BUFFER_PCT        : 0.05,    // TP sits 5% above upper bound
+  ATR_MULTIPLIER_DEFAULT : 2.5,
+  GEOMETRIC_THRESHOLD_PCT: 20,    // use Geometric mode if range > 20%
+};
+
+export function getGridCapital() {
+  return parseFloat(localStorage.getItem('gridCapital') || GRID_CONFIG.DEFAULT_CAPITAL);
+}
+export function setGridCapital(val) {
+  localStorage.setItem('gridCapital', String(val));
+}

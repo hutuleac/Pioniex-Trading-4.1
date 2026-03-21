@@ -1,6 +1,6 @@
 'use strict';
 
-import { CFG, SIG_TIPS } from './config.js';
+import { CFG, SIG_TIPS, GRID_CONFIG } from './config.js';
 import { fvgStatus } from './indicators.js';
 
 // ══════════════════════════════════════════════════════════════════
@@ -207,6 +207,154 @@ export function buildFastRow(name, m, prov, score, direction, dirConds, rec) {
     <td>${recH}</td>
   </tr>
   <tr class="deep-row" id="deep-${name}" style="display:none"><td colspan="11"></td></tr>`;
+}
+
+// ── Grid Risk Notice (collapsible banner, once per panel) ────────
+export function renderCryptoRiskNotice(allMetrics) {
+  const warnings = [];
+  for (const [name, m] of Object.entries(allMetrics)) {
+    if (!m) continue;
+    const adxVal = m.adx?.adx ?? 0;
+    if (adxVal > 25) warnings.push(`<span class="warn">⚠ ${name} ADX=${adxVal.toFixed(1)} — trending market, grid bot not recommended</span>`);
+    if ((m.atrPct ?? 0) > 5) warnings.push(`<span class="warn">⚠ ${name} ATR=${(m.atrPct).toFixed(1)}% — high volatility, use Geometric mode and widen range</span>`);
+    if (m.rsi > 70) warnings.push(`<span class="warn">⚠ ${name} RSI=${m.rsi.toFixed(1)} — overbought, wait for pullback before starting bot</span>`);
+  }
+  const dynHtml = warnings.length
+    ? `<div class="grid-risk-dynamic">${warnings.join('')}</div>`
+    : '';
+  return `<div class="section">
+    <details class="grid-risk-notice">
+      <summary class="section-title" style="cursor:pointer;list-style:none">
+        ⚠ Grid Bot Risk Warnings
+        <span style="font-size:.65rem;opacity:.6;margin-left:6px">▾ click to expand</span>
+      </summary>
+      <div class="grid-risk-body">
+        <div class="grid-risk-static">
+          <div>• Grid bots lose in strong trends — check ADX before starting (ADX &lt; 20 ideal)</div>
+          <div>• All altcoins (SOL, SUI, TRX, BNB) correlate with BTC — one BTC dump can push all bots below their lower bounds simultaneously</div>
+          <div>• Check for token unlocks, protocol upgrades, and macro events (FOMC, ETF flows) within your 1–3 week window before starting</div>
+        </div>
+        ${dynHtml}
+      </div>
+    </details>
+  </div>`;
+}
+
+// ── Grid Bot Panel (per-ticker cards) ────────────────────────────
+export function renderGridPanel(allMetrics, capital) {
+  const cards = Object.entries(allMetrics).map(([name, m]) => {
+    if (!m || !m.gridViability) return '';
+    const v      = m.gridViability;
+    const range  = m.gridRange;
+    const rec    = m.gridRecommendation;
+    const profit = m.gridProfitPerGrid;
+    const dd     = m.gridDrawdown;
+    const mode   = m.gridMode;
+    const sl     = m.gridSL;
+    const tp     = m.gridTP;
+
+    // Viability badge
+    let badge;
+    if (!v.viable) {
+      badge = `<span class="grid-badge avoid">AVOID GRID</span>`;
+    } else if (v.warning) {
+      badge = `<span class="grid-badge caution">CAUTION</span>`;
+    } else {
+      badge = `<span class="grid-badge ok">GRID OK</span>`;
+    }
+
+    // Recommended setup block
+    let setupHtml = '';
+    if (v.viable && range && rec && profit) {
+      const capitalPerGrid = capital / rec.recommended;
+      const profitUSDT     = capitalPerGrid * profit.netPct;
+      const triggerPrice   = (m.price >= range.rangeLow && m.price <= range.rangeHigh)
+        ? m.price
+        : (range.rangeLow + range.rangeHigh) / 2;
+      const profitCls = profit.isViable ? 'bull' : 'warn';
+
+      setupHtml = `<div class="grid-setup">
+        <div class="grid-setup-title">Recommended Setup</div>
+        <div class="grid-params">
+          <div class="grid-param-row"><span class="grid-param-label">Range</span><span class="grid-param-val">$${fmt(range.rangeLow,2)} — $${fmt(range.rangeHigh,2)} <em>(${fmt(range.rangeWidthPct,1)}%)</em></span></div>
+          <div class="grid-param-row"><span class="grid-param-label">Grid Count</span><span class="grid-param-val">${rec.recommended} <em>(min ${rec.min}, max ${rec.max})</em></span></div>
+          <div class="grid-param-row"><span class="grid-param-label">Mode</span><span class="grid-param-val">${mode.mode} <em style="opacity:.6;font-size:.68rem">${mode.reason}</em></span></div>
+          <div class="grid-param-row"><span class="grid-param-label">Profit/Grid (net)</span><span class="grid-param-val ${profitCls}">${(profit.netPct*100).toFixed(3)}% (~$${fmt(profitUSDT,2)})</span></div>
+          <div class="grid-param-row"><span class="grid-param-label">Capital/Grid</span><span class="grid-param-val">$${fmt(capitalPerGrid,2)}</span></div>
+          <div class="grid-param-row"><span class="grid-param-label">Trigger Price</span><span class="grid-param-val">$${fmt(triggerPrice,2)}</span></div>
+          <div class="grid-param-row"><span class="grid-param-label">Stop Loss</span><span class="grid-param-val bear">$${fmt(sl,2)}</span></div>
+          <div class="grid-param-row"><span class="grid-param-label">Take Profit</span><span class="grid-param-val bull">$${fmt(tp,2)}</span></div>
+        </div>
+      </div>`;
+    }
+
+    // Worst-case drawdown block
+    let drawdownHtml = '';
+    if (dd && range) {
+      const crashTarget = range.rangeLow * 0.85;
+      const ddPct       = dd.drawdownPct * 100;
+      const ddCls       = ddPct > 20 ? 'bear' : ddPct > 10 ? 'warn' : 'bull';
+      drawdownHtml = `<div class="grid-drawdown">
+        <div class="grid-setup-title">Worst-Case Drawdown</div>
+        <div style="font-size:.75rem;color:var(--text2)">
+          If price drops to $${fmt(crashTarget,2)} → you hold ${fmt(dd.coinsHeld,4)} coins worth $${fmt(dd.valueAtCrash,2)}
+          → Drawdown: <span class="${ddCls}">$${fmt(dd.drawdownUSDT,2)} (${fmt(ddPct,1)}%)</span>
+        </div>
+      </div>`;
+    }
+
+    // Warnings block
+    let warningsHtml = '';
+    const warnItems = [];
+    if (!v.viable) warnItems.push(`<span class="bear">✗ ${v.reason}</span>`);
+    if (v.warning) v.warning.split(' | ').forEach(w => warnItems.push(`<span class="warn">⚠ ${w}</span>`));
+    if (warnItems.length) {
+      warningsHtml = `<div class="grid-warnings">${warnItems.join('')}</div>`;
+    }
+
+    // Copyable checklist
+    let checklistHtml = '';
+    if (v.viable && range && rec && profit) {
+      const capitalPerGrid = capital / rec.recommended;
+      const profitUSDT     = capitalPerGrid * profit.netPct;
+      const ddPct          = dd ? (dd.drawdownPct * 100).toFixed(1) : '—';
+      const ddUSDT         = dd ? fmt(dd.drawdownUSDT, 2) : '—';
+      const triggerPrice   = (m.price >= range.rangeLow && m.price <= range.rangeHigh)
+        ? m.price : (range.rangeLow + range.rangeHigh) / 2;
+      const checklistText =
+`[Spot Grid] [${name}/USDT]
+Range: $${fmt(range.rangeLow,2)} — $${fmt(range.rangeHigh,2)}
+Grids: ${rec.recommended} (${mode.mode})
+Capital: $${fmt(capital,0)} | Capital/Grid: $${fmt(capitalPerGrid,2)}
+Profit/Grid (net): ${(profit.netPct*100).toFixed(3)}% (~$${fmt(profitUSDT,2)})
+Trigger: $${fmt(triggerPrice,2)}
+TP: $${fmt(tp,2)} | SL: $${fmt(sl,2)}
+Max Drawdown (worst-case): $${ddUSDT} (${ddPct}%)`;
+
+      checklistHtml = `<div class="grid-checklist">
+        <div class="grid-setup-title">Checklist <button class="btn grid-copy-btn" data-text="${checklistText.replace(/"/g,'&quot;')}">Copy</button></div>
+        <pre class="grid-checklist-text">${checklistText}</pre>
+      </div>`;
+    }
+
+    return `<div class="grid-card">
+      <div class="grid-card-head">
+        <span class="grid-ticker">${name}</span>
+        <span class="grid-price">$${fmt(m.price,2)}</span>
+        ${badge}
+        <span class="grid-profile" style="opacity:.5;font-size:.65rem">${m.gridProfile?.profile ?? ''}</span>
+      </div>
+      ${setupHtml}
+      ${drawdownHtml}
+      ${warningsHtml}
+      ${checklistHtml}
+    </div>`;
+  }).join('');
+
+  return `<div class="section">
+    <div class="section-title">Grid Bot Advisor · Spot Grid Setup Guide</div>
+    <div class="grid-bot-panel">${cards || '<div class="empty">No grid data — refresh to load</div>'}</div>
+  </div>`;
 }
 
 // ── Deep analyze card ────────────────────────────────────────────
