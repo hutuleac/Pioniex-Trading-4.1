@@ -4,6 +4,29 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [4.5.0] — 2026-03-21
+
+### Added
+- HYPE (HYPEUSDT) and XMR (XMRUSDT) added to default symbol set (now 8 tickers)
+- Grid profiles for new tickers: HYPE = volatile (rangeMultiplier 3.5, maxGrids 50), XMR = moderate (3.0, 40)
+- XMR automatically routes to Bybit fallback (delisted from Binance Feb 2024)
+
+## [4.4.0] — 2026-03-21
+
+### Added
+- Version badge in topbar — reads `CFG.APP_VERSION` and renders as a cyan pill next to the title
+- `APP_VERSION` constant added to `CFG` in `js/config.js` as single source of truth for version display
+- `.version-pill` CSS class for styled version indicator
+
+### Changed
+- Risk parameters tuned for higher risk appetite (moderate profile):
+  - Leverage tiers shifted up: ≥7.5→2x · ≥8.0→3x · ≥8.5→4x · ≥9.0→5x · ≥9.5→6x (was max 5x at 9.5)
+  - `SCORE_BOT_MIN` activation threshold: already 7.5 (README corrected from stale 8.0)
+  - `TARGET_NET_PCT`: 0.8% → 0.6% per grid
+  - `MIN_NET_PCT`: 0.6% → 0.5% per grid
+  - `SL_BUFFER_PCT`: 12% → 10% below range lower bound
+- Score Analysis: scores 6.5–7.4 now show "⚡ NEAR ACTIVE — monitor" instead of "waiting for confluence"
+
 ## [4.3.0] — 2026-03-21
 
 ### Changed

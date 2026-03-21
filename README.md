@@ -10,7 +10,7 @@ No build tools, no npm, no backend — pure ES Modules served over any static HT
 
 - **Live Metrics Table** — price, funding rate, RSI, ATR, flow%, POC, AVWAP, CVD, OI, structure, EMA, FVG for each symbol
 - **Signal Analysis** — 10 signal categories per symbol (Trend Macro, Trend Swing, Pressure, CVD Quality, Setup, Risk, Grid Bot, FVG, EMA Trend, Volume Spike)
-- **Score Engine (0–10)** — weighted composite score with breakdown; score ≥ 8.0 activates bot parameters
+- **Score Engine (0–10)** — weighted composite score with breakdown; score ≥ 7.5 activates bot parameters
 - **Bot Parameters** — entry, SL, TP1/TP2, leverage, position size, R:R, trail trigger — calculated per active symbol
 - **Symbol Manager** — add/remove symbols at runtime; Binance or Bybit used automatically per symbol
 - **Auto-refresh** — fetches every 20 minutes; countdown timer shown in topbar
@@ -116,7 +116,7 @@ Scores range from **0 to 10**. A score ≥ 8.0 generates bot parameters.
 
 ---
 
-## Bot Parameters (score ≥ 8.0)
+## Bot Parameters (score ≥ 7.5)
 
 | Parameter | Formula |
 |-----------|---------|
@@ -124,7 +124,7 @@ Scores range from **0 to 10**. A score ≥ 8.0 generates bot parameters.
 | Stop Loss | Entry ± 1.5 × ATR4H |
 | Take Profit 1 | Entry ± 3.0 × ATR4H (close 50%, move SL to breakeven) |
 | Take Profit 2 | Entry ± 5.25 × ATR4H (trail remaining 50%) |
-| Leverage | Score ≥ 9.5 → 5x · ≥ 9.0 → 4x · ≥ 8.5 → 3x · ≥ 8.0 → 2x |
+| Leverage | Score ≥ 9.5 → 6x · ≥ 9.0 → 5x · ≥ 8.5 → 4x · ≥ 8.0 → 3x · ≥ 7.5 → 2x |
 
 ---
 
@@ -134,7 +134,7 @@ All parameters are in `js/config.js` under the `CFG` object. Key values:
 
 ```js
 REFRESH_INTERVAL_SEC : 1200   // 20 minutes
-SCORE_BOT_MIN        : 8.0    // minimum score to activate bot params
+SCORE_BOT_MIN        : 7.5    // minimum score to activate bot params
 RSI_OB / RSI_OS      : 70 / 30
 FLOW_STRONG          : 5.0    // % threshold for strong buy/sell flow
 SL_ATR_MULT          : 1.5
@@ -147,15 +147,15 @@ Grid bot parameters are in `GRID_CONFIG` (also in `js/config.js`):
 ```js
 DEFAULT_CAPITAL        : 500    // USDT per session (overridable via Config modal → saved in localStorage)
 FEE_PCT                : 0.001  // 0.1% per side (0.2% round-trip per grid)
-TARGET_NET_PCT         : 0.008  // 0.8% target net profit per grid
-MIN_NET_PCT            : 0.006  // minimum viable net profit per grid
-SL_BUFFER_PCT          : 0.12   // SL sits 12% below range lower bound
+TARGET_NET_PCT         : 0.006  // 0.6% target net profit per grid
+MIN_NET_PCT            : 0.005  // minimum viable net profit per grid
+SL_BUFFER_PCT          : 0.10   // SL sits 10% below range lower bound
 TP_BUFFER_PCT          : 0.05   // TP sits 5% above range upper bound
 ATR_MULTIPLIER_DEFAULT : 2.5    // range = price ± (ATR% × multiplier)
 GEOMETRIC_THRESHOLD_PCT: 20     // use Geometric mode when range width ≥ 20%
 ```
 
-Default symbols: BTC, ETH, BNB, SOL, TRX, SUI — all editable at runtime via the symbol bar.
+Default symbols: BTC, ETH, BNB, SOL, TRX, SUI, HYPE, XMR — all editable at runtime via the symbol bar.
 
 ---
 
