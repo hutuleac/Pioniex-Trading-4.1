@@ -19,7 +19,7 @@ export const CFG = {
   OI_SQUEEZE_HIGH: 10.0, OI_SQUEEZE_MED: 5.0,
   POC_NEAR_PCT: 0.5, FVG_NEAR_PCT: 1.0, FVG_ENTRY_PCT: 1.5, POC_CONFLUENCE_PCT: 0.5,
   VOL_SPIKE_MULT: 2.0, VOL_AVG_WINDOW: 20,
-  SCORE_BOT_MIN: 8.0, CVD_LATERAL_RATIO: 0.2,
+  SCORE_BOT_MIN: 7.5, CVD_LATERAL_RATIO: 0.2,
   SL_ATR_MULT: 1.5, TP1_ATR_MULT: 3.0, TP2_ATR_MULT: 5.25,
   TRAIL_OFFSET_MULT: 0.5, GRID_BUFFER: 0.02,
 };
@@ -65,9 +65,9 @@ export const LEGENDS = [
 export const GRID_CONFIG = {
   DEFAULT_CAPITAL      : 500,
   FEE_PCT              : 0.001,   // 0.1% per side, 0.2% round-trip per grid
-  TARGET_NET_PCT       : 0.008,   // 0.8% target net profit per grid
-  MIN_NET_PCT          : 0.006,   // minimum viable profit per grid
-  SL_BUFFER_PCT        : 0.12,    // SL sits 12% below lower bound
+  TARGET_NET_PCT       : 0.006,   // 0.6% target net profit per grid
+  MIN_NET_PCT          : 0.005,   // minimum viable profit per grid
+  SL_BUFFER_PCT        : 0.10,    // SL sits 10% below lower bound
   TP_BUFFER_PCT        : 0.05,    // TP sits 5% above upper bound
   ATR_MULTIPLIER_DEFAULT : 2.5,
   GEOMETRIC_THRESHOLD_PCT: 20,    // use Geometric mode if range > 20%

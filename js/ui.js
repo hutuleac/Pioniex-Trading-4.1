@@ -36,9 +36,9 @@ export function buildTableRow(name, m, prov) {
   const cvdH  = v => v>0 ? col("[ACC]","bull") : col("[DIS]","bear");
   const trend = m.price>m.avwap5d ? col("[UP]","bull") : col("[DN]","bear");
   const pairs = [Math.abs(m.poc5d-m.poc14d)/m.poc14d*100, Math.abs(m.poc5d-m.poc30d)/m.poc30d*100, Math.abs(m.poc14d-m.poc30d)/m.poc30d*100];
-  const conf  = pairs.filter(p=>p<0.5).length>=2 ? col("[YES]","warn") : "–";
+  const conf  = pairs.filter(p=>p<1.5).length>=2 ? col("[YES]","warn") : "–";
   const sweepH= m.sweep==="BUY_SWP" ? col("[BUY SWP]","bear") : m.sweep==="SELL_SWP" ? col("[SELL SWP]","bull") : `<span class="neutral">Neutral</span>`;
-  const emaFC = m.emaFast>m.emaSlow ? col(fmt(m.emaFast,2),"bull") : col(fmt(m.emaFast,2),"bear");
+  const emaFC = m.price>m.emaFast ? col(fmt(m.emaFast,2),"bull") : col(fmt(m.emaFast,2),"bear");
   let fvgH = "–";
   if (m.fvgList?.length) {
     const g=m.fvgList[0], st=fvgStatus(m.price,g);
@@ -87,7 +87,7 @@ export function buildScoreRow(name, score, direction, bot) {
   const bc   = scColor(score);
   const dirH = direction==="LONG"?col("LONG","bull"):direction==="SHORT"?col("SHORT","bear"):"–";
   const lev  = bot ? `${bot.leverage}x` : "–";
-  const stat = bot ? `<span class="bull">★ ACTIVE — ${bot.leverage}x lev</span>` : `<span class="neutral">waiting for confluence</span>`;
+  const stat = bot ? `<span class="bull">★ ACTIVE — ${bot.leverage}x lev</span>` : score>=6.5 ? `<span class="neutral">⚡ NEAR ACTIVE — monitor</span>` : `<span class="neutral">waiting for confluence</span>`;
   return `<tr>
     <td><strong>${name}</strong></td>
     <td><span class="${scClass(score)}">${score.toFixed(2)}</span></td>

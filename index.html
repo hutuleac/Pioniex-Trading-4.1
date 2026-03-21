@@ -37,14 +37,14 @@
         <th style="text-align:left"><span class="tip">Symbol<span class="tiptext">Ticker name and data provider (BN=Binance, BB=Bybit)</span></span></th>
         <th><span class="tip">Price<span class="tiptext">Current mark price in USDT</span></span></th>
         <th><span class="tip">Δ% 24h<span class="tiptext">24h price change using 1H klines: (lastClose − firstOpen) / firstOpen × 100</span></span></th>
-        <th><span class="tip">Score<span class="tiptext">Composite 0–10 score. ≥8 = active setup, 6–7.9 = developing, &lt;6 = no setup</span></span></th>
+        <th><span class="tip">Score<span class="tiptext">Composite 0–10 score. ≥7.5 = active setup, 6–7.4 = developing, &lt;6 = no setup</span></span></th>
         <th><span class="tip">Setup<span class="tiptext">Direction signal with N/M conditions met. WAIT = no clear direction from macro analysis</span></span></th>
         <th><span class="tip">RSI<span class="tiptext">14-period RSI on 4H. &lt;30 oversold (green), &gt;70 overbought (red), 30–70 neutral</span></span></th>
         <th><span class="tip">Fund%<span class="tiptext">8h funding rate. Positive = longs pay shorts (bearish pressure). Negative = shorts pay longs</span></span></th>
         <th><span class="tip">OI%7d<span class="tiptext">Open interest change over 7 days. Rising OI + rising price = real bull momentum</span></span></th>
         <th><span class="tip">Str4H<span class="tiptext">4H market structure: last 20 candles higher highs/lows (Bullish) or lower (Bearish)</span></span></th>
         <th><span class="tip">Str30d<span class="tiptext">30d market structure: last 40 candles trend direction. Conflict with 4H = elevated risk</span></span></th>
-        <th><span class="tip">Rec<span class="tiptext">Enter = score ≥8 + no blockers. Watch ⚠ = score ≥8 with blockers. Watch = score 6–8. Avoid = score &lt;6</span></span></th>
+        <th><span class="tip">Rec<span class="tiptext">Enter = score ≥7.5 + no blockers. Watch ⚠ = score ≥7.5 with blockers. Watch = score 6–7.4. Avoid = score &lt;6</span></span></th>
       </tr></thead>
       <tbody id="fast-tbody">
         <tr><td colspan="11" class="empty">Loading…</td></tr>
@@ -112,8 +112,8 @@
         <th><span class="tip">Score / 10<span class="tiptext">Composite score 0–10. Weights: Trend Macro +2 · Pressure +2 · Setup +2 · Trend Swing +1.5 · CVD Quality +1 · EMA +0.5 · FVG +0.5 · POC Confluence +0.5. Penalties for RSI extreme, OI squeeze, structure conflict.</span></span></th>
         <th><span class="tip">Bar<span class="tiptext">Visual score bar. Green = strong (8–10) · Yellow = moderate (6–7.9) · Red = weak (&lt;6).</span></span></th>
         <th><span class="tip">Direction<span class="tiptext">Bias determined by macro trend analysis. LONG = 3+ of 4 bull conditions met (AVWAP14d, AVWAP30d, Structure30d, CVD30d). SHORT = 3+ bear conditions.</span></span></th>
-        <th><span class="tip">Leverage<span class="tiptext">Suggested max leverage based on score. ≥9.5 = 5x · ≥9.0 = 4x · ≥8.5 = 3x · ≥8.0 = 2x. Always adjust to your own risk tolerance.</span></span></th>
-        <th><span class="tip">Status<span class="tiptext">Bot activation status. ★ ACTIVE = score ≥8.0 — bot parameters generated below. Waiting = below threshold, no trade yet.</span></span></th>
+        <th><span class="tip">Leverage<span class="tiptext">Suggested max leverage based on score. ≥9.5 = 6x · ≥9.0 = 5x · ≥8.5 = 4x · ≥8.0 = 3x · ≥7.5 = 2x. Always adjust to your own risk tolerance.</span></span></th>
+        <th><span class="tip">Status<span class="tiptext">Bot activation status. ★ ACTIVE = score ≥7.5 — bot parameters generated below. Waiting = below threshold, no trade yet.</span></span></th>
       </tr></thead>
       <tbody id="score-tbody"><tr><td colspan="6" class="empty">—</td></tr></tbody>
     </table>
@@ -128,9 +128,9 @@
 
 <!-- BOT PARAMS -->
 <div class="section">
-  <div class="section-title">Active Bot Parameters · Score ≥ 8.0</div>
+  <div class="section-title">Active Bot Parameters · Score ≥ 7.5</div>
   <div class="bot-grid" id="bot-grid">
-    <div class="empty">No asset has reached score 8.0 yet</div>
+    <div class="empty">No asset has reached score 7.5 yet</div>
   </div>
 </div>
 
@@ -163,7 +163,7 @@
       <div class="legend-box-item">OI↑+Price↑ = Real bull · OI↑+Price↓ = Squeeze risk</div>
       <div class="legend-box-item">CVD all [ACC] = Full Accumulation (high-confidence)</div>
       <div class="legend-box-item">POC Conf [YES] = POC5d ≈ POC14d → strong S/R zone</div>
-      <div class="legend-box-item" style="margin-top:4px;color:var(--cyan2)">Score ≥ 8.0 → Bot parameters activated</div>
+      <div class="legend-box-item" style="margin-top:4px;color:var(--cyan2)">Score ≥ 7.5 → Bot parameters activated</div>
     </div>
     <div class="legend-box">
       <div class="legend-box-title">Score Weights</div>

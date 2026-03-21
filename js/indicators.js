@@ -641,7 +641,7 @@ export function calcBotParams(price, atr, score, direction, poc5d, poc14d, avwap
     tp2 = entry - slDist*(CFG.TP2_ATR_MULT/CFG.SL_ATR_MULT);
     side = "SELL / SHORT";
   }
-  const lev = score>=9.5?5:score>=9.0?4:score>=8.5?3:2;
+  const lev = score>=9.5?6:score>=9.0?5:score>=8.5?4:score>=8.0?3:2;
   const posPct = Math.min(30,(10-lev)*5);
   return { side, entry, sl, tp1, tp2, leverage:lev, posPct,
     rr1:Math.abs(tp1-entry)/Math.abs(sl-entry), rr2:Math.abs(tp2-entry)/Math.abs(sl-entry),
