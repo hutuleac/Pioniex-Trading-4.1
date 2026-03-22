@@ -13,11 +13,63 @@ import { buildTableRow, buildSigCard, buildScoreRow, buildScoreDetail, buildBotC
 // ══════════════════════════════════════════════════════════════════
 //  MODULE-LEVEL STATE
 // ══════════════════════════════════════════════════════════════════
-let SYMBOLS = { BTC:"BTCUSDT", ETH:"ETHUSDT", BNB:"BNBUSDT", SOL:"SOLUSDT", TRX:"TRXUSDT", SUI:"SUIUSDT", HYPE:"HYPEUSDT" };
+const DEFAULT_SYMBOLS = { BTC:"BTCUSDT", ETH:"ETHUSDT", BNB:"BNBUSDT", SOL:"SOLUSDT", TRX:"TRXUSDT", SUI:"SUIUSDT", HYPE:"HYPEUSDT" };
+let SYMBOLS = (() => {
+  try {
+    const saved = localStorage.getItem('pioniex_symbols');
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      if (parsed && typeof parsed === 'object' && Object.keys(parsed).length > 0) return parsed;
+    }
+  } catch(e) {}
+  return { ...DEFAULT_SYMBOLS };
+})();
 let symProvider = {};     // name → 'Binance' | 'Bybit'
 let refreshTimer = null, countdownTimer = null, nextRefresh = 0;
 let isLoading = false;
 let lastAllMetrics = {};  // cached for grid panel re-render on capital change
+
+function saveSymbols() {
+  localStorage.setItem('pioniex_symbols', JSON.stringify(SYMBOLS));
+}
+
+function renderTickerChips() {
+  const container = document.getElementById('ticker-chips');
+  if (!container) return;
+  const canRemove = Object.keys(SYMBOLS).length > 1;
+  container.innerHTML = Object.keys(SYMBOLS).map(name =>
+    `<span style="display:inline-flex;align-items:center;gap:4px;background:var(--bg2);border:1px solid var(--border2);border-radius:4px;padding:3px 8px;font-size:.75rem;font-family:'IBM Plex Mono',monospace;color:var(--text)">${name}${canRemove
+      ? `<button onclick="window._removeTicker('${name}')" title="Remove ${name}" style="background:none;border:none;cursor:pointer;color:var(--dim);font-size:.85rem;padding:0 0 0 2px;line-height:1">×</button>`
+      : ''}</span>`
+  ).join('');
+}
+
+function removeTicker(name) {
+  if (Object.keys(SYMBOLS).length <= 1) return;
+  delete SYMBOLS[name];
+  saveSymbols();
+  renderTickerChips();
+  triggerRefresh();
+}
+
+async function addTicker(name) {
+  const clean = name.toUpperCase().replace(/[^A-Z]/g, '');
+  if (!clean) return { error: 'Invalid ticker name' };
+  if (SYMBOLS[clean]) return { error: `${clean} is already in the list` };
+  const symbol = clean + 'USDT';
+  try {
+    await fetchPriceFunding(clean, symbol);
+    SYMBOLS[clean] = symbol;
+    saveSymbols();
+    renderTickerChips();
+    triggerRefresh();
+    return { ok: true, name: clean };
+  } catch(e) {
+    return { error: `${clean} not found on Binance or Bybit` };
+  }
+}
+
+window._removeTicker = removeTicker;
 
 
 // ══════════════════════════════════════════════════════════════════
@@ -223,8 +275,20 @@ function showModal() {
         <span id="capital-saved-msg" style="font-size:.7rem;color:var(--green);display:none">Saved!</span>
       </div>
       <p style="font-size:.65rem;color:var(--dim);margin-top:4px">Default: $500. Used for capital/grid and drawdown calculations.</p>
+    </div>
+    <div style="margin-top:14px;border-top:1px solid var(--border2);padding-top:12px">
+      <label style="display:block;font-size:.75rem;font-weight:600;margin-bottom:8px;color:var(--text)">Manage Tickers</label>
+      <div id="ticker-chips" style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px"></div>
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <input id="ticker-add-input" type="text" maxlength="10" placeholder="e.g. DOT"
+          style="background:var(--bg2);border:1px solid var(--border2);color:var(--text);padding:5px 8px;border-radius:4px;font-family:'IBM Plex Mono',monospace;font-size:.82rem;width:90px;text-transform:uppercase">
+        <button id="btn-add-ticker" class="btn primary" style="font-size:.75rem">+ Add</button>
+        <span id="ticker-add-msg" style="font-size:.7rem;display:none"></span>
+      </div>
+      <p style="font-size:.65rem;color:var(--dim);margin-top:4px">Enter ticker name (e.g. DOT → DOTUSDT). Validated live against Binance/Bybit.</p>
     </div>`;
   document.getElementById('modal-overlay').classList.add('show');
+  renderTickerChips();
 
   document.getElementById('btn-save-capital').addEventListener('click', () => {
     const val = parseFloat(document.getElementById('grid-capital-input').value);
@@ -244,6 +308,33 @@ function showModal() {
       const msg = document.getElementById('capital-saved-msg');
       if (msg) { msg.style.display = 'inline'; setTimeout(() => { msg.style.display = 'none'; }, 2000); }
     }
+  });
+
+  async function handleAddTicker() {
+    const input = document.getElementById('ticker-add-input');
+    const btn   = document.getElementById('btn-add-ticker');
+    const msg   = document.getElementById('ticker-add-msg');
+    const val   = input.value.trim();
+    if (!val) return;
+    btn.disabled = true;
+    btn.textContent = '…';
+    msg.style.display = 'none';
+    const result = await addTicker(val);
+    btn.disabled = false;
+    btn.textContent = '+ Add';
+    msg.style.display = 'inline';
+    if (result.ok) {
+      msg.style.color = 'var(--green)';
+      msg.textContent = `✓ ${result.name} added`;
+      input.value = '';
+    } else {
+      msg.style.color = 'var(--red)';
+      msg.textContent = `✗ ${result.error}`;
+    }
+  }
+  document.getElementById('btn-add-ticker').addEventListener('click', handleAddTicker);
+  document.getElementById('ticker-add-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') handleAddTicker();
   });
 }
 function hideModal() { document.getElementById('modal-overlay').classList.remove('show'); }

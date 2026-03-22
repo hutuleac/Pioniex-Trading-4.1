@@ -155,7 +155,7 @@ ATR_MULTIPLIER_DEFAULT : 2.5    // range = price ± (ATR% × multiplier)
 GEOMETRIC_THRESHOLD_PCT: 20     // use Geometric mode when range width ≥ 20%
 ```
 
-Default symbols: BTC, ETH, BNB, SOL, TRX, SUI, HYPE, XMR — all editable at runtime via the symbol bar.
+Default symbols: BTC, ETH, BNB, SOL, TRX, SUI, HYPE — all editable at runtime via the Config modal (add/remove with live Binance/Bybit validation, persisted in localStorage).
 
 ---
 

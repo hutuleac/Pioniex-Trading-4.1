@@ -4,6 +4,18 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [4.6.0] — 2026-03-22
+
+### Added
+- Dynamic ticker management in Config modal — add/remove symbols at runtime without editing code
+- Ticker list persisted in `localStorage` (`pioniex_symbols`) and restored on page load; falls back to hardcoded defaults if empty
+- Live validation on add: calls Binance/Bybit API before accepting a ticker; shows ✓/✗ inline feedback
+- Minimum 1 ticker enforced — last ticker cannot be removed
+- Enter key support on ticker input field
+
+### Removed
+- XMR (XMRUSDT) removed from default symbol set (delisted from Binance, unreliable on Bybit)
+
 ## [4.5.0] — 2026-03-21
 
 ### Added
