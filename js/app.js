@@ -13,7 +13,7 @@ import { buildTableRow, buildSigCard, buildScoreRow, buildScoreDetail, buildBotC
 // ══════════════════════════════════════════════════════════════════
 //  MODULE-LEVEL STATE
 // ══════════════════════════════════════════════════════════════════
-let SYMBOLS = { BTC:"BTCUSDT", ETH:"ETHUSDT", BNB:"BNBUSDT", SOL:"SOLUSDT", TRX:"TRXUSDT", SUI:"SUIUSDT", HYPE:"HYPEUSDT", XMR:"XMRUSDT" };
+let SYMBOLS = { BTC:"BTCUSDT", ETH:"ETHUSDT", BNB:"BNBUSDT", SOL:"SOLUSDT", TRX:"TRXUSDT", SUI:"SUIUSDT", HYPE:"HYPEUSDT" };
 let symProvider = {};     // name → 'Binance' | 'Bybit'
 let refreshTimer = null, countdownTimer = null, nextRefresh = 0;
 let isLoading = false;
