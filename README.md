@@ -1,6 +1,6 @@
-# Pioniex Futures Monitor
+# CIM — Crypto Intelligence Matrix `v5.2`
 
-A client-side futures trading dashboard for 4H setups. Pulls live data from Binance Futures (primary) and Bybit V5 (fallback), calculates all indicators locally, and outputs signals, a composite score, and bot parameters for each tracked symbol.
+A client-side crypto futures intelligence dashboard for 4H setups. Pulls live data from Binance Futures (primary) and Bybit V5 (fallback), calculates all indicators locally, and outputs signals, a composite score, and bot parameters for each tracked symbol.
 
 No build tools, no npm, no backend — pure ES Modules served over any static HTTP server.
 
@@ -8,15 +8,17 @@ No build tools, no npm, no backend — pure ES Modules served over any static HT
 
 ## Features
 
+- **Market Pulse Strip** — real-time topbar pills: 24h Volume, Fear & Greed index (alternative.me), Smart Money (Binance top trader L/S ratio)
+- **Fast Decision Table** — click any row to expand a deep card with 4 indicator groups + score breakdown + direction checklist
 - **Live Metrics Table** — price, funding rate, RSI, ATR, flow%, POC, AVWAP, CVD, OI, structure, EMA, FVG for each symbol
-- **Signal Analysis** — 10 signal categories per symbol (Trend Macro, Trend Swing, Pressure, CVD Quality, Setup, Risk, Grid Bot, FVG, EMA Trend, Volume Spike)
+- **Signal Analysis** — 10 signal categories per symbol with color-coded edge bars (bull/bear/neutral)
 - **Score Engine (0–10)** — weighted composite score with breakdown; score ≥ 7.5 activates bot parameters
 - **Bot Parameters** — entry, SL, TP1/TP2, leverage, position size, R:R, trail trigger — calculated per active symbol
 - **Symbol Manager** — add/remove symbols at runtime; Binance or Bybit used automatically per symbol
 - **Auto-refresh** — fetches every 20 minutes; countdown timer shown in topbar
-- **Reference Guide** — color legend, score weights, and collapsible indicator glossary
-- **Grid Bot Advisor** — per-ticker Spot Grid setup guide: recommended range (ATR-based), grid count, mode (Arithmetic/Geometric), net profit/grid, SL/TP levels, worst-case drawdown, and a copyable setup checklist. Includes collapsible risk notice with dynamic ADX/ATR/RSI warnings per ticker
+- **Grid Bot Advisor** — per-ticker Spot Grid setup guide: recommended range (ATR-based), grid count, mode (Arithmetic/Geometric), net profit/grid, SL/TP levels, worst-case drawdown, and a copyable setup checklist
 - **Compact Metrics View** — Full Metrics table defaults to 15 key columns; "⊞ Show All" toggle reveals all 25 on demand
+- **Responsive** — adapts from 4K (max-width 1440px) down to mobile (480px)
 
 ---
 

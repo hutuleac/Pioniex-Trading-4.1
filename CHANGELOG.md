@@ -4,6 +4,41 @@ All notable changes to this project will be documented in this file.
 
 Format: [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 
+## [5.2.0] — 2026-03-24
+
+### Added
+- Signal edge bars — 3px colored left border on signal and bot cards (green=bull, red=bear, cyan=neutral)
+- CIM hexagon + candlestick favicon (`favicon.svg`); page title updated to "CIM · Crypto Intelligence Matrix"
+- `--card` / `--card-h` semantic CSS tokens in `:root` — used by sig/bot cards
+- Max-width 1440px on all `.section` containers (ultra-wide screen friendly)
+
+### Changed
+- Card hover: lift `translateY(-2px)` + color-matched glow on sig/bot cards
+- Transitions upgraded to `cubic-bezier(.4,0,.2,1)` at `.3s` across cards and buttons
+- Section title divider line fades via `linear-gradient` instead of solid color
+- Fixed circular `--row-stripe`, `--row-border`, `--shadow` CSS variable self-references in `:root`
+- `prefers-reduced-motion` accessibility guard wraps all animations
+
+## [5.1.0] — 2026-03-24
+
+### Added
+- Market Pulse pills in topbar: 24h Volume, Fear & Greed index, Smart Money (Binance top trader L/S ratio)
+- `fetchMarketPulse()` in `js/api.js` — parallel fetch via `Promise.allSettled`, graceful per-source fallback
+- `buildMarketPulseStrip()` in `js/ui.js` — renders color-coded pills inline in topbar
+- Responsive topbar breakpoints: wraps at 1024px, compacts at 768px, minimal at 480px
+
+### Changed
+- Topbar title replaced with CIM / "Crypto Intelligence Matrix" logo + subtitle
+- Removed duplicate "Updated:" timestamp from topbar
+- Removed non-loading Retail pill
+
+## [5.0.0] — 2026-03-24
+
+### Changed
+- Deep card dropdown: stable dark background (`--bg`), no hover flash on content
+- Score Components table: tighter row padding (`3px 8px`) and section title margin
+- `.claude/` and `index_to_learn_from.html` added to `.gitignore`; `settings.local.json` untracked
+
 ## [4.6.0] — 2026-03-22
 
 ### Added

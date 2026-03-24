@@ -73,7 +73,7 @@ When spawning subagents (Agent/Task tool), the routing block is automatically in
 
 ## Project Overview
 
-A client-side crypto futures monitoring dashboard (v4.6). Fetches live data from Binance Futures (primary) and Bybit V5 (fallback), calculates technical indicators entirely in the browser, and scores assets 0–10 to surface trading setups. Deployed on Vercel. No backend, no build step.
+CIM (Crypto Intelligence Matrix) — a client-side crypto futures monitoring dashboard (v5.2). Fetches live data from Binance Futures (primary) and Bybit V5 (fallback), calculates technical indicators entirely in the browser, and scores assets 0–10 to surface trading setups. Includes Market Pulse topbar (Fear & Greed, Smart Money, 24h Volume), signal edge bars, and responsive layout. Deployed on Vercel. No backend, no build step.
 
 **Stack:** Vanilla HTML + CSS + ES Modules (`<script type="module">`) · Google Fonts (Chakra Petch, IBM Plex Mono) · Vercel Analytics
 
@@ -130,7 +130,7 @@ app.js::fetchAndDisplay()
 
 | Constant | Value | Notes |
 |----------|-------|-------|
-| `CFG.APP_VERSION` | `'4.6'` | Update on releases |
+| `CFG.APP_VERSION` | `'5.2'` | Update on releases |
 | `CFG.REFRESH_INTERVAL_SEC` | `1200` | 20 min auto-refresh |
 | `CFG.SCORE_BOT_MIN` | `7.5` | Score threshold for bot params activation |
 | `CFG.RSI_OB/OS` | `70 / 30` | Standard overbought/oversold |
