@@ -18,6 +18,45 @@ export function sCol(s)        {
 export function scClass(s) { return s>=8?'s-high':s>=6?'s-mid':'s-low'; }
 export function scColor(s) { return s>=8?'var(--green)':s>=6?'var(--yellow)':'var(--red)'; }
 
+// ══════════════════════════════════════════════════════════════════
+//  MARKET PULSE STRIP
+// ══════════════════════════════════════════════════════════════════
+export function buildMarketPulseStrip(pulse) {
+  const { volume24h, fg, smartMoney, socialHype } = pulse || {};
+
+  const volStr = volume24h == null ? '—'
+    : volume24h >= 1e9 ? `$${(volume24h / 1e9).toFixed(2)}B`
+    : `$${(volume24h / 1e6).toFixed(0)}M`;
+
+  let fgCls = 'neutral', fgStr = '—';
+  if (fg) {
+    fgStr = `${fg.value} ${fg.label}`;
+    fgCls = fg.value >= 60 ? 'bull' : fg.value <= 40 ? 'bear' : 'warn';
+  }
+
+  let smCls = 'neutral', smStr = '—';
+  if (smartMoney) {
+    const lbl = smartMoney.bias === 'long' ? 'Long' : smartMoney.bias === 'short' ? 'Short' : 'Neutral';
+    smStr = `${lbl} ${smartMoney.ratio.toFixed(2)}×`;
+    smCls = smartMoney.bias === 'long' ? 'bull' : smartMoney.bias === 'short' ? 'bear' : 'neutral';
+  }
+
+  let shCls = 'neutral', shStr = '—';
+  if (socialHype) {
+    const lbl = socialHype.bias === 'buy' ? 'Buy' : socialHype.bias === 'sell' ? 'Sell' : 'Neutral';
+    shStr = `${lbl} ${socialHype.pct.toFixed(0)}%`;
+    shCls = socialHype.bias === 'buy' ? 'bull' : socialHype.bias === 'sell' ? 'bear' : 'neutral';
+  }
+
+  const pill = (label, val, cls) =>
+    `<div class="pill pulse-pill"><span class="pulse-label">${label}</span><span class="${cls}">${val}</span></div>`;
+  return [
+    pill('24h Vol', volStr, ''),
+    pill('F&amp;G',  fgStr,  fgCls),
+    pill('Smart $', smStr,  smCls),
+  ].join('');
+}
+
 export function sigValHtml(val, cls) {
   const cm = { bull:'color:var(--green)', bear:'color:var(--red)', warn:'color:var(--yellow)', neutral:'color:var(--text2)' };
   return `<span style="${cm[cls]||''};font-weight:700">${val}</span>`;

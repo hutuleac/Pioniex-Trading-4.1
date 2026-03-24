@@ -4,11 +4,12 @@ import { CFG, LEGENDS, GRID_CONFIG, getGridCapital, setGridCapital } from './con
 import { calcRangeFromATR, calcRecommendedGridCount, calcGridProfitPerGrid,
          calcDrawdownScenario, selectGridMode, calcGridStopLoss, calcGridTakeProfit,
          assessGridViability, getTickerGridProfile } from './grid.js';
-import { fetchPriceFunding } from './api.js';
+import { fetchPriceFunding, fetchMarketPulse } from './api.js';
 import { getAdvancedMetrics, interpretSignals, calcScore, calcBotParams,
          calcRecommendation, calcDirectionConditions } from './indicators.js';
 import { buildTableRow, buildSigCard, buildBotCard,
-         buildFastRow, buildDeepCard, renderCryptoRiskNotice, renderGridPanel } from './ui.js';
+         buildFastRow, buildDeepCard, renderCryptoRiskNotice, renderGridPanel,
+         buildMarketPulseStrip } from './ui.js';
 
 // ══════════════════════════════════════════════════════════════════
 //  MODULE-LEVEL STATE
@@ -121,6 +122,15 @@ async function fetchAndDisplay() {
   }
 
   const allMetrics = {}, allSignals = {}, allScores = {}, allBots = {}, allDirConds = {}, allRecs = {};
+
+  // ── Market Pulse (one-time global fetch, non-blocking) ─────────
+  try {
+    const pulse = await fetchMarketPulse(Object.values(SYMBOLS));
+    const strip = document.getElementById('market-pulse-pills');
+    if (strip) strip.innerHTML = buildMarketPulseStrip(pulse);
+  } catch(e) {
+    console.warn('[MarketPulse] fetch failed:', e.message);
+  }
 
   for (const [name, symbol] of Object.entries(SYMBOLS)) {
     try {
@@ -238,7 +248,8 @@ async function fetchAndDisplay() {
 
   // ── Status ─────────────────────────────────────────────────────
   const ok = Object.values(allMetrics).filter(Boolean).length;
-  document.getElementById('last-update').textContent = `Updated: ${new Date().toLocaleTimeString('en-GB')}`;
+  const lu = document.getElementById('last-update');
+  if (lu) lu.textContent = `Updated: ${new Date().toLocaleTimeString('en-GB')}`;
   setStatus('live', `Live · ${ok}/${Object.keys(SYMBOLS).length} ok`);
   isLoading = false;
   if (refreshBtn) refreshBtn.disabled = false;

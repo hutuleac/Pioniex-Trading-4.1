@@ -20,11 +20,15 @@ export async function tryFetch(url, timeout = 12000) {
 
 // ── Binance public endpoints ──────────────────────────────────────
 export const B = {
-  ticker   : s => tryFetch(`${BINANCE_BASE}/fapi/v1/ticker/price?symbol=${s}`),
-  premium  : s => tryFetch(`${BINANCE_BASE}/fapi/v1/premiumIndex?symbol=${s}`),
-  klines   : (s,i,l) => tryFetch(`${BINANCE_BASE}/fapi/v1/klines?symbol=${s}&interval=${i}&limit=${l}`),
-  oiHist   : s => tryFetch(`${BINANCE_BASE}/futures/data/openInterestHist?symbol=${s}&period=4h&limit=${CFG.OI_LIMIT}`),
-  oiNow    : s => tryFetch(`${BINANCE_BASE}/fapi/v1/openInterest?symbol=${s}`),
+  ticker        : s => tryFetch(`${BINANCE_BASE}/fapi/v1/ticker/price?symbol=${s}`),
+  ticker24h     : s => tryFetch(`${BINANCE_BASE}/fapi/v1/ticker/24hr?symbol=${s}`),
+  premium       : s => tryFetch(`${BINANCE_BASE}/fapi/v1/premiumIndex?symbol=${s}`),
+  klines        : (s,i,l) => tryFetch(`${BINANCE_BASE}/fapi/v1/klines?symbol=${s}&interval=${i}&limit=${l}`),
+  oiHist        : s => tryFetch(`${BINANCE_BASE}/futures/data/openInterestHist?symbol=${s}&period=4h&limit=${CFG.OI_LIMIT}`),
+  oiNow         : s => tryFetch(`${BINANCE_BASE}/fapi/v1/openInterest?symbol=${s}`),
+  smartMoney    : s => tryFetch(`${BINANCE_BASE}/futures/data/topLongShortAccountRatio?symbol=${s}&period=1h&limit=1`),
+  takerSentiment: s => tryFetch(`${BINANCE_BASE}/futures/data/takerBuySellVol?symbol=${s}&period=1h&limit=1`),
+  fearGreed     : () => tryFetch('https://api.alternative.me/fng/?limit=1'),
 };
 
 // ── Bybit public endpoints ────────────────────────────────────────
@@ -78,6 +82,50 @@ export async function fetchKlines(name, symbol, interval, limit) {
     console.warn(`[${name}] Binance klines(${interval}×${limit}) failed, trying Bybit…`);
     return await Y.klines(symbol, interval, limit);
   }
+}
+
+export async function fetchMarketPulse(symbols = []) {
+  const tasks = [
+    B.fearGreed(),
+    B.smartMoney('BTCUSDT'),
+    B.takerSentiment('BTCUSDT'),
+    ...symbols.map(s => B.ticker24h(s)),
+  ];
+  const results = await Promise.allSettled(tasks);
+  const [fgRes, smRes, tsRes, ...volResults] = results;
+
+  let fg = null;
+  if (fgRes.status === 'fulfilled') {
+    const d = fgRes.value?.data?.[0];
+    if (d) fg = { value: parseInt(d.value), label: d.value_classification };
+  }
+
+  let smartMoney = null;
+  if (smRes.status === 'fulfilled') {
+    const d = smRes.value?.[0];
+    if (d) {
+      const ratio = parseFloat(d.longShortRatio);
+      smartMoney = { ratio, bias: ratio > 1.1 ? 'long' : ratio < 0.9 ? 'short' : 'neutral' };
+    }
+  }
+
+  let socialHype = null;
+  if (tsRes.status === 'fulfilled') {
+    const d = tsRes.value?.[0];
+    if (d) {
+      const r = parseFloat(d.buySellRatio);
+      const pct = r / (r + 1) * 100;
+      socialHype = { pct, bias: pct > 52 ? 'buy' : pct < 48 ? 'sell' : 'neutral' };
+    }
+  }
+
+  let volume24h = null;
+  const vols = volResults
+    .filter(r => r.status === 'fulfilled')
+    .map(r => parseFloat(r.value?.quoteVolume || 0));
+  if (vols.length > 0) volume24h = vols.reduce((a, b) => a + b, 0);
+
+  return { volume24h, fg, smartMoney, socialHype };
 }
 
 export async function fetchOI(name, symbol) {

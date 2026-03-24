@@ -37,10 +37,11 @@ body::before{
   position:sticky;top:0;z-index:100;
   background:rgba(7,9,15,.96); backdrop-filter:blur(12px);
   border-bottom:1px solid var(--border);
-  display:flex;align-items:center;gap:12px;padding:10px 20px;flex-wrap:wrap;
+  display:flex;align-items:center;gap:8px;padding:8px 20px;flex-wrap:wrap;
 }
-#topbar h1{font-size:1.15rem;font-weight:700;letter-spacing:.15em;color:var(--cyan);text-transform:uppercase;white-space:nowrap;}
-#topbar h1 span{color:var(--text2);font-weight:400;font-size:.82rem;letter-spacing:.05em;}
+.logo{display:flex;flex-direction:column;gap:1px;line-height:1;margin-right:4px;}
+.logo-mark{font-size:1.1rem;font-weight:700;letter-spacing:.18em;color:var(--cyan);font-family:'Chakra Petch',sans-serif;text-transform:uppercase;white-space:nowrap;}
+.logo-sub{font-size:.58rem;color:var(--text2);letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;}
 .pill{
   display:flex;align-items:center;gap:6px;
   background:var(--bg3);border:1px solid var(--border);border-radius:20px;
@@ -339,3 +340,28 @@ th .tiptext{display:none !important;}
 .main-metrics-table.expanded th,
 .main-metrics-table.expanded td
 { display: table-cell; }
+
+/* ── MARKET PULSE PILLS ──────────────────────────────────────── */
+.pulse-pill{padding:4px 12px;font-size:.84rem;gap:6px;}
+.pulse-label{color:var(--dim);text-transform:uppercase;font-size:.72rem;letter-spacing:.05em;}
+
+/* ── RESPONSIVE ──────────────────────────────────────────────── */
+/* ≤1024px — pulse pills wrap below logo row */
+@media(max-width:1024px){
+  .topbar-right{width:100%;justify-content:flex-start;}
+}
+/* ≤768px — tighten topbar padding, reduce pill sizes */
+@media(max-width:768px){
+  #topbar{padding:7px 14px;gap:6px;}
+  .pulse-pill{font-size:.78rem;padding:3px 10px;}
+  .pulse-label{font-size:.65rem;}
+  .logo-mark{font-size:.95rem;}
+  .logo-sub{display:none;}
+}
+/* ≤480px — single column stack, hide version pill */
+@media(max-width:480px){
+  #topbar{padding:6px 10px;gap:5px;}
+  .version-pill{display:none;}
+  .btn{padding:5px 10px;min-height:36px;font-size:.72rem;}
+  .pulse-pill{font-size:.73rem;padding:3px 8px;}
+}
