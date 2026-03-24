@@ -15,9 +15,11 @@
   --text:    #dde3f5;
   --text2:   #9dafc8;
   --white:   #eef2ff;
-  --row-stripe: var(--row-stripe);
-  --row-border: var(--row-border);
-  --shadow:     var(--shadow);
+  --row-stripe: rgba(30,38,64,.35);
+  --row-border: rgba(30,38,64,.4);
+  --shadow:     rgba(0,0,0,.65);
+  --card:       #0d1120;
+  --card-h:     #111827;
 }
 *{margin:0;padding:0;box-sizing:border-box;}
 html{font-size:16px;}
@@ -61,7 +63,7 @@ body::before{
   background:var(--bg3);border:1px solid var(--border2);color:var(--text);
   font-family:'Chakra Petch',sans-serif;font-size:.8rem;font-weight:600;
   letter-spacing:.08em;padding:7px 14px;min-height:44px;border-radius:6px;cursor:pointer;
-  text-transform:uppercase;transition:all .15s;white-space:nowrap;
+  text-transform:uppercase;transition:all .3s cubic-bezier(.4,0,.2,1);white-space:nowrap;
   display:inline-flex;align-items:center;gap:6px;line-height:1;
 }
 .btn:disabled{opacity:.45;cursor:not-allowed;pointer-events:none;}
@@ -94,12 +96,12 @@ body::before{
 }
 .sym-input:focus{border-color:var(--cyan);}
 /* ── SECTIONS ──────────────────────────────────────────── */
-.section{padding:14px 20px;position:relative;z-index:1;}
+.section{padding:14px 20px;position:relative;z-index:1;max-width:1440px;margin:0 auto;width:100%;}
 .section-title{
   font-size:.82rem;font-weight:700;letter-spacing:.18em;text-transform:uppercase;
   color:var(--cyan);margin-bottom:10px;display:flex;align-items:center;gap:8px;
 }
-.section-title::after{content:'';flex:1;height:1px;background:var(--border);}
+.section-title::after{content:'';flex:1;height:1px;background:linear-gradient(90deg,var(--border),transparent);}
 /* ── MAIN TABLE ─────────────────────────────────────────── */
 .table-wrap{overflow-x:auto;}
 table{width:100%;border-collapse:collapse;font-family:'IBM Plex Mono',monospace;font-size:.8rem;}
@@ -120,7 +122,7 @@ tr.shimmer td{color:var(--dim);animation:pulse .9s infinite;}
 .warn{color:var(--yellow);}
 /* ── SIGNALS GRID ────────────────────────────────────────── */
 .signals-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));}
-.sig-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .2s;}
+.sig-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),transform .3s cubic-bezier(.4,0,.2,1);}
 .sig-card:hover{border-color:var(--border2);}
 .sig-head{
   background:var(--bg3);padding:9px 13px;
@@ -147,7 +149,7 @@ tr.shimmer td{color:var(--dim);animation:pulse .9s infinite;}
 .deep-card tr:hover td{background:inherit;}
 /* ── BOT CARDS ───────────────────────────────────────────── */
 .bot-grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));}
-.bot-card{background:var(--bg2);border:1px solid var(--border);border-radius:10px;overflow:hidden;}
+.bot-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),transform .3s cubic-bezier(.4,0,.2,1);}
 .bot-head{padding:11px 15px;display:flex;align-items:center;justify-content:space-between;}
 .bot-head.long{background:rgba(0,230,118,.08);border-bottom:1px solid rgba(0,230,118,.2);}
 .bot-head.short{background:rgba(255,26,75,.08);border-bottom:1px solid rgba(255,26,75,.2);}
@@ -227,10 +229,14 @@ th .tiptext{display:none !important;}
 .legend-box-title{font-size:.82rem;font-weight:700;color:var(--cyan2);text-transform:uppercase;letter-spacing:.1em;margin-bottom:8px;}
 .legend-box-item{font-size:.86rem;color:var(--text2);margin:4px 0;line-height:1.55;}
 /* ── ENHANCED HOVER EFFECTS ──────────────────────────────── */
-.sig-card:hover{border-color:var(--cyan) !important;box-shadow:0 0 16px rgba(0,212,255,.1);}
+.sig-card:hover{border-color:var(--cyan) !important;box-shadow:0 0 24px rgba(0,212,255,.12);transform:translateY(-2px);}
 .sig-row{cursor:default;transition:background .1s;}
 .sig-row:hover{background:var(--row-stripe);}
-.bot-card:hover{border-color:var(--border2);box-shadow:0 4px 20px rgba(0,0,0,.3);}
+.bot-card:hover{border-color:var(--border2);box-shadow:0 8px 28px rgba(0,0,0,.45);transform:translateY(-2px);}
+/* ── SIGNAL EDGE BARS ────────────────────────────────────────── */
+.edge-bull{border-left:3px solid var(--green) !important;}
+.edge-bear{border-left:3px solid var(--red) !important;}
+.edge-neutral{border-left:3px solid var(--cyan) !important;}
 .legend-item{transition:border-color .2s,background .2s;}
 .legend-item:hover{border-color:var(--border2);background:var(--bg3);}
 .sym-chip{cursor:default;transition:border-color .15s,background .15s;}
@@ -364,4 +370,8 @@ th .tiptext{display:none !important;}
   .version-pill{display:none;}
   .btn{padding:5px 10px;min-height:36px;font-size:.72rem;}
   .pulse-pill{font-size:.73rem;padding:3px 8px;}
+}
+/* ── MOTION SAFETY ───────────────────────────────────────────── */
+@media(prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important;transform:none !important;}
 }

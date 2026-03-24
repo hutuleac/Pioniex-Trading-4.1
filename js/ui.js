@@ -110,7 +110,8 @@ export function buildSigCard(name, price, signals, prov) {
   const mc = signals['Trend Macro']?.[1];
   const pc = mc==='bull'?'var(--green)':mc==='bear'?'var(--red)':'var(--cyan)';
   const pb = prov==='Bybit'?`<span class="prov-badge">Bybit</span>`:`<span class="prov-badge">Binance</span>`;
-  return `<div class="sig-card">
+  const edgeCls = mc==='bull' ? 'edge-bull' : mc==='bear' ? 'edge-bear' : 'edge-neutral';
+  return `<div class="sig-card ${edgeCls}">
     <div class="sig-head">
       <span class="sym">${name}</span>
       <span class="price" style="color:${pc}">${fmt(price,2)}</span>
@@ -146,7 +147,8 @@ export function buildBotCard(name, bot, score, dir) {
     ["Trail trigger","Active after TP1",fmt(bot.trailTrigger,4)],
     ["Trail offset","0.5×ATR",fmt(bot.trailOffset,4)],
   ].map(([l,n,v]) => `<div class="param-row"><span class="param-label">${l}${n?` <em style="opacity:.5;font-size:.6rem">${n}</em>`:''}</span><span class="param-val">${v}</span></div>`).join('');
-  return `<div class="bot-card">
+  const botEdge = dir==='LONG' ? 'edge-bull' : 'edge-bear';
+  return `<div class="bot-card ${botEdge}">
     <div class="bot-head ${cls}">
       <span class="bot-title ${dc}">${name} — ${bot.side}</span>
       <span style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">Score: <span class="${scClass(score)}">${score.toFixed(2)}/10</span></span>
