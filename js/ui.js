@@ -81,41 +81,6 @@ export function buildSigCard(name, price, signals, prov) {
   </div>`;
 }
 
-// ── Score row ────────────────────────────────────────────────────
-export function buildScoreRow(name, score, direction, bot) {
-  const bw   = (score/10*100).toFixed(0);
-  const bc   = scColor(score);
-  const dirH = direction==="LONG"?col("LONG","bull"):direction==="SHORT"?col("SHORT","bear"):"–";
-  const lev  = bot ? `${bot.leverage}x` : "–";
-  const stat = bot ? `<span class="bull">★ ACTIVE — ${bot.leverage}x lev</span>` : score>=6.5 ? `<span class="neutral">⚡ NEAR ACTIVE — monitor</span>` : `<span class="neutral">waiting for confluence</span>`;
-  return `<tr>
-    <td><strong>${name}</strong></td>
-    <td><span class="${scClass(score)}">${score.toFixed(2)}</span></td>
-    <td><div class="score-bar-bg"><div class="score-bar-fill" style="width:${bw}%;background:${bc}"></div></div></td>
-    <td>${dirH}</td><td>${lev}</td><td>${stat}</td>
-  </tr>`;
-}
-
-// ── Score detail ─────────────────────────────────────────────────
-export function buildScoreDetail(name, score, direction, detail) {
-  const rows = detail.map(([comp,val,reason]) => {
-    const vH = val>0 ? `<span class="bull">+${val.toFixed(2)}</span>` : val<0 ? `<span class="bear">${val.toFixed(2)}</span>` : `<span class="neutral"> ${val.toFixed(2)}</span>`;
-    return `<div class="detail-row"><span class="detail-val">${vH}</span><span class="detail-comp">${comp}</span><span class="detail-reason">${reason}</span></div>`;
-  }).join('');
-  return `<div class="score-detail">
-    <div style="font-size:.72rem;font-weight:700;margin-bottom:7px;color:var(--text)">
-      ${name} — Score: <span class="${scClass(score)}">${score.toFixed(2)}/10</span>
-      &nbsp;|&nbsp; Direction: <strong>${direction||"—"}</strong>
-    </div>
-    <div class="detail-row" style="border-bottom:1px solid var(--border2);margin-bottom:3px;padding-bottom:4px">
-      <span class="detail-val" style="color:var(--text2);font-size:.67rem;font-weight:500">PTS</span>
-      <span class="detail-comp" style="color:var(--text2);font-size:.67rem;font-weight:500">COMPONENT</span>
-      <span class="detail-reason" style="color:var(--text2);font-size:.67rem;font-weight:500">REASON / VALUES</span>
-    </div>
-    ${rows}
-  </div>`;
-}
-
 // ── Bot card ──────────────────────────────────────────────────────
 export function buildBotCard(name, bot, score, dir) {
   const cls = dir==="LONG"?"long":"short", dc = dir==="LONG"?"bull":"bear";
@@ -358,7 +323,7 @@ Max Drawdown (worst-case): $${ddUSDT} (${ddPct}%)`;
 }
 
 // ── Deep analyze card ────────────────────────────────────────────
-export function buildDeepCard(name, m, score, direction, dirConds, rec) {
+export function buildDeepCard(name, m, score, direction, dirConds, rec, detail = []) {
   const chg = m.change24h ?? 0;
   const chgH = chg > 0.005
     ? `<span class="bull">+${fmt(chg,2)}%</span>`
@@ -421,27 +386,40 @@ export function buildDeepCard(name, m, score, direction, dirConds, rec) {
   const oiCls   = m.oiChange > 5 ? 'bull' : m.oiChange < -5 ? 'bear' : 'neutral';
   const oiLbl   = m.oiChange > 5 ? 'rising' : m.oiChange < -5 ? 'falling' : 'flat';
 
-  const gridItems = [
-    [`RSI: ${fmt(m.rsi,1)}`,          `<span class="${rsiCls}">${rsiLabel}</span>`],
-    [`Funding: ${fmt(m.funding,4)}%`, `<span class="neutral">${fundLabel}</span>`],
-    [`Trend 4H:`,                     sCol(m.structure4h)],
-    [`AVWAP30d: $${fmt(m.avwap30d,1)}`, `<span class="${avwapCls}">${avwapLbl}</span>`],
-    [`Structure 30d:`,                sCol(m.structure30d)],
-    [`CVD:`,                          cvdH],
-    [`ADX: ${fmt(adxVal,1)}`,        `<span class="${adxCls}">${adxLbl}</span>`],
-    [`OI% 7d: ${fmt(m.oiChange,2)}%`,`<span class="${oiCls}">${oiLbl}</span>`],
-    [`ATR%: ${fmt(atrPct,2)}%`,      `<span class="${atrCls}">${atrLbl}</span>`],
-    [`Sweep:`,                        sweepH],
-    [`BB-BW: ${fmt(bbBw,1)}%`,       `<span class="${bbCls}">${bbLbl}</span>`],
-    [`FVG:`,                          `<span class="neutral">${fvgH}</span>`],
-    [`MACD: ${hist>=0?'+':''}${fmt(hist,4)}`, `<span class="${macdCls}">${macdTrd}</span>`],
-    [`EMA:`,                          emaH],
-    [`OBV:`,                          `<span class="${obvCls}">${obvTrd}</span>`],
-    [`Fib zone:`,                     `<span class="neutral">${fibZone}</span>`],
+  const groups = [
+    { title: 'Trend',      cls: 'trend',      items: [
+      [`Structure 4H`,  sCol(m.structure4h)],
+      [`Structure 30d`, sCol(m.structure30d)],
+      [`AVWAP30d`,      `<span class="${avwapCls}">$${fmt(m.avwap30d,1)} ${avwapLbl}</span>`],
+      [`EMA 50/200`,    emaH],
+    ]},
+    { title: 'Momentum',   cls: 'momentum',   items: [
+      [`RSI`,           `<span class="${rsiCls}">${fmt(m.rsi,1)} · ${rsiLabel}</span>`],
+      [`CVD`,           cvdH],
+      [`MACD`,          `<span class="${macdCls}">${hist>=0?'+':''}${fmt(hist,4)} · ${macdTrd}</span>`],
+      [`OBV`,           `<span class="${obvCls}">${obvTrd}</span>`],
+    ]},
+    { title: 'Volatility', cls: 'volatility', items: [
+      [`ADX`,           `<span class="${adxCls}">${fmt(adxVal,1)} · ${adxLbl}</span>`],
+      [`ATR%`,          `<span class="${atrCls}">${fmt(atrPct,2)}% · ${atrLbl}</span>`],
+      [`BB Bandwidth`,  `<span class="${bbCls}">${fmt(bbBw,1)}% · ${bbLbl}</span>`],
+      [`Funding`,       `<span class="neutral">${fmt(m.funding,4)}% · ${fundLabel}</span>`],
+    ]},
+    { title: 'Setup',      cls: 'setup',      items: [
+      [`OI% 7d`,        `<span class="${oiCls}">${fmt(m.oiChange,2)}% · ${oiLbl}</span>`],
+      [`Sweep`,         sweepH],
+      [`FVG`,           `<span class="neutral">${fvgH}</span>`],
+      [`Fib Zone`,      `<span class="neutral">${fibZone}</span>`],
+    ]},
   ];
 
-  const gridHtml = gridItems.map(([label, value]) =>
-    `<div class="deep-row-item"><span class="deep-label">${label}</span><span class="deep-value">${value}</span></div>`
+  const gridHtml = groups.map(g => `
+    <div class="deep-group">
+      <div class="deep-group-title ${g.cls}">${g.title}</div>
+      ${g.items.map(([label, value]) =>
+        `<div class="deep-row-item"><span class="deep-label">${label}</span><span class="deep-value">${value}</span></div>`
+      ).join('')}
+    </div>`
   ).join('');
 
   let blockersHtml = '';
@@ -474,5 +452,16 @@ export function buildDeepCard(name, m, score, direction, dirConds, rec) {
     <div class="deep-grid">${gridHtml}</div>
     ${blockersHtml}
     ${checklistHtml}
+    ${detail.length ? `
+    <div class="deep-section-title">Score Components</div>
+    <table class="score-mini-table">
+      <thead><tr><th>Component</th><th>Pts</th><th>Reason</th></tr></thead>
+      <tbody>${detail.map(([comp,val,reason]) => {
+        const vH = val>0 ? `<span class="bull">+${val.toFixed(2)}</span>`
+                 : val<0 ? `<span class="bear">${val.toFixed(2)}</span>`
+                 : `<span class="neutral">0.00</span>`;
+        return `<tr><td>${comp}</td><td>${vH}</td><td class="sc-reason">${reason}</td></tr>`;
+      }).join('')}</tbody>
+    </table>` : ''}
   </div>`;
 }

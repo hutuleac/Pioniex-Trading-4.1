@@ -7,7 +7,7 @@ import { calcRangeFromATR, calcRecommendedGridCount, calcGridProfitPerGrid,
 import { fetchPriceFunding } from './api.js';
 import { getAdvancedMetrics, interpretSignals, calcScore, calcBotParams,
          calcRecommendation, calcDirectionConditions } from './indicators.js';
-import { buildTableRow, buildSigCard, buildScoreRow, buildScoreDetail, buildBotCard,
+import { buildTableRow, buildSigCard, buildBotCard,
          buildFastRow, buildDeepCard, renderCryptoRiskNotice, renderGridPanel } from './ui.js';
 
 // ══════════════════════════════════════════════════════════════════
@@ -194,7 +194,8 @@ async function fetchAndDisplay() {
       const deepTd = document.querySelector(`#deep-${name} td`);
       if (deepTd) {
         deepTd.innerHTML = buildDeepCard(name, m, allScores[name]?.score??0,
-          allScores[name]?.direction??null, allDirConds[name], allRecs[name]);
+          allScores[name]?.direction??null, allDirConds[name], allRecs[name],
+          allScores[name]?.detail??[]);
       }
     });
     if (window._attachHeaderTips) window._attachHeaderTips();
@@ -212,15 +213,8 @@ async function fetchAndDisplay() {
       buildSigCard(name, price, signals, symProvider[name])
     ).join('') || '<div class="empty" style="grid-column:1/-1">No signal data</div>';
 
-  // ── Render scores ──────────────────────────────────────────────
-  const sorted = Object.entries(allScores).sort((a,b) => b[1].score - a[1].score);
-  document.getElementById('score-tbody').innerHTML =
-    sorted.map(([n,{score,direction}]) => buildScoreRow(n, score, direction, allBots[n])).join('') ||
-    '<tr><td colspan="6" class="empty">—</td></tr>';
-  document.getElementById('score-details').innerHTML =
-    sorted.map(([n,{score,direction,detail}]) => buildScoreDetail(n, score, direction, detail)).join('');
-
   // ── Render bots ────────────────────────────────────────────────
+  const sorted = Object.entries(allScores).sort((a,b) => b[1].score - a[1].score);
   const active = sorted.filter(([n]) => allBots[n]);
   document.getElementById('bot-grid').innerHTML = active.length
     ? active.map(([n,{score,direction}]) => buildBotCard(n, allBots[n], score, direction)).join('')
@@ -339,23 +333,6 @@ function showModal() {
 }
 function hideModal() { document.getElementById('modal-overlay').classList.remove('show'); }
 
-// ══════════════════════════════════════════════════════════════════
-//  SCORE BREAKDOWN TOGGLE
-// ══════════════════════════════════════════════════════════════════
-function toggleScoreDetails() {
-  const details = document.getElementById('score-details');
-  const ci      = document.getElementById('details-ci');
-  const btnText = document.getElementById('details-btn-text');
-  if (details.style.display === 'none') {
-    details.style.display = 'block';
-    ci.textContent = '▼';
-    btnText.textContent = 'Hide Score Breakdown';
-  } else {
-    details.style.display = 'none';
-    ci.textContent = '▶';
-    btnText.textContent = 'Show Score Breakdown';
-  }
-}
 
 // ══════════════════════════════════════════════════════════════════
 //  GLOSSARY TOGGLE
@@ -421,7 +398,6 @@ function initHeaderTooltips() {
 // Event listeners — replace all inline onclick handlers
 document.getElementById('refresh-btn').addEventListener('click', triggerRefresh);
 document.getElementById('btn-config').addEventListener('click', showModal);
-document.getElementById('toggle-details-btn').addEventListener('click', toggleScoreDetails);
 document.getElementById('btn-glossary').addEventListener('click', toggleGlossary);
 document.getElementById('btn-close-modal').addEventListener('click', hideModal);
 document.getElementById('modal-overlay').addEventListener('click', e => { if (e.target === e.currentTarget) hideModal(); });

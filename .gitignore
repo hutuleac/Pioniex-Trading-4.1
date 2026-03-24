@@ -13,6 +13,12 @@ desktop.ini
 # Planning artifacts
 .planning/
 
+# Claude Code local config
+.claude/
+
+# Reference-only files (not for deployment)
+index_to_learn_from.html
+
 # Python (dev server)
 *.py
 *.pyc
