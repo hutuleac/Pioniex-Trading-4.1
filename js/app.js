@@ -3,7 +3,8 @@
 import { CFG, LEGENDS, GRID_CONFIG, getGridCapital, setGridCapital } from './config.js';
 import { calcRangeFromATR, calcRecommendedGridCount, calcGridProfitPerGrid,
          calcDrawdownScenario, selectGridMode, calcGridStopLoss, calcGridTakeProfit,
-         assessGridViability, getTickerGridProfile } from './grid.js';
+         assessGridViability, getTickerGridProfile, selectGridDirection,
+         estimateGridDuration } from './grid.js';
 import { fetchPriceFunding, fetchMarketPulse } from './api.js';
 import { getAdvancedMetrics, interpretSignals, calcScore, calcBotParams,
          calcRecommendation, calcDirectionConditions } from './indicators.js';
@@ -14,7 +15,7 @@ import { buildTableRow, buildSigCard, buildBotCard,
 // ══════════════════════════════════════════════════════════════════
 //  MODULE-LEVEL STATE
 // ══════════════════════════════════════════════════════════════════
-const DEFAULT_SYMBOLS = { BTC:"BTCUSDT", ETH:"ETHUSDT", BNB:"BNBUSDT", SOL:"SOLUSDT", TRX:"TRXUSDT", SUI:"SUIUSDT", HYPE:"HYPEUSDT" };
+const DEFAULT_SYMBOLS = { BTC:"BTCUSDT", BNB:"BNBUSDT", SOL:"SOLUSDT", SUI:"SUIUSDT", TRX:"TRXUSDT", DOGE:"DOGEUSDT", XLM:"XLMUSDT", XRP:"XRPUSDT", HYPE:"HYPEUSDT" };
 let SYMBOLS = (() => {
   try {
     const saved = localStorage.getItem('pioniex_symbols');
@@ -25,10 +26,16 @@ let SYMBOLS = (() => {
   } catch(e) {}
   return { ...DEFAULT_SYMBOLS };
 })();
-let symProvider = {};     // name → 'Binance' | 'Bybit'
+let symProvider  = {};   // name → 'Binance' | 'Bybit'
+let allMetrics   = {};   // module-level: used by incremental add + grid re-render
+let allSignals   = {};
+let allScores    = {};
+let allBots      = {};
+let allDirConds  = {};
+let allRecs      = {};
 let refreshTimer = null, countdownTimer = null, nextRefresh = 0;
-let isLoading = false;
-let lastAllMetrics = {};  // cached for grid panel re-render on capital change
+let isLoading    = false;
+let lastAllMetrics = {};  // alias kept for grid capital re-render
 
 function saveSymbols() {
   localStorage.setItem('pioniex_symbols', JSON.stringify(SYMBOLS));
@@ -63,7 +70,7 @@ async function addTicker(name) {
     SYMBOLS[clean] = symbol;
     saveSymbols();
     renderTickerChips();
-    triggerRefresh();
+    addAndRenderTicker(clean, symbol); // fetch only the new ticker, no full reload
     return { ok: true, name: clean };
   } catch(e) {
     return { error: `${clean} not found on Binance or Bybit` };
@@ -100,6 +107,102 @@ function triggerRefresh() {
   fetchAndDisplay();
 }
 
+// ── Per-ticker processing (shared by full refresh + incremental add) ──
+async function fetchSingleTicker(name, symbol) {
+  const pf = await fetchPriceFunding(name, symbol);
+  symProvider[name] = pf.provider;
+  const m = await getAdvancedMetrics(name, symbol);
+
+  const signals = interpretSignals(
+    pf.price, m.rsi, m.atr, m.flow, m.oiChange,
+    m.poc5d, m.avwap5d, m.poc14d, m.avwap14d, m.avwap30d,
+    m.cvd5d, m.cvd14d, m.cvd30d,
+    m.structure4h, m.structure30d, m.sweep, m.fvgList,
+    m.emaFast, m.emaSlow, m.volSpike, m.volCurr, m.volAvg
+  );
+  const { score, direction, detail } = calcScore(
+    pf.price, m.atr, m.rsi, m.flow, m.oiChange,
+    m.poc5d, m.avwap5d, m.poc14d, m.avwap14d, m.avwap30d,
+    m.cvd5d, m.cvd14d, m.cvd30d,
+    m.structure4h, m.structure30d, m.sweep, m.fvgList,
+    m.emaFast, m.emaSlow
+  );
+  const bot      = calcBotParams(pf.price, m.atr, score, direction, m.poc5d, m.poc14d, m.avwap5d, m.fvgList);
+  const mFull    = { ...m, price: pf.price, funding: pf.funding };
+  const dirConds = calcDirectionConditions(pf.price, m.emaSlow, m.structure4h, m.structure30d, m.avwap30d, m.rsi, m.adx?.adx ?? 0, direction);
+  const rec      = calcRecommendation(score, direction, m.atrPct ?? 0, pf.funding, m.rsi);
+
+  const gridProfile = getTickerGridProfile(name);
+  mFull.gridProfile    = gridProfile;
+  mFull.gridScore      = score;
+  mFull.gridViability  = assessGridViability(mFull.atrPct ?? 0, mFull.adx?.adx ?? 0, mFull.rsi, mFull.bbBw ?? 0, mFull.structure4h);
+  mFull.gridDirection  = selectGridDirection(mFull.structure4h, score);
+  mFull.gridRange      = calcRangeFromATR(pf.price, mFull.atrPct ?? 1, gridProfile.rangeMultiplier, mFull.gridDirection.type);
+  mFull.gridMode       = selectGridMode(mFull.gridRange.rangeWidthPct);
+  mFull.gridRecommendation = calcRecommendedGridCount(mFull.gridRange.rangeHigh, mFull.gridRange.rangeLow);
+  mFull.gridProfitPerGrid  = calcGridProfitPerGrid(mFull.gridRange.rangeHigh, mFull.gridRange.rangeLow, mFull.gridRecommendation.recommended, undefined, mFull.gridMode.mode === 'Geometric');
+  mFull.gridDrawdown   = calcDrawdownScenario(getGridCapital(), mFull.gridRange.rangeLow, pf.price, mFull.gridRange.rangeLow * 0.85);
+  mFull.gridSL         = calcGridStopLoss(mFull.gridRange.rangeLow, gridProfile.profile);
+  mFull.gridTP         = calcGridTakeProfit(mFull.gridRange.rangeHigh, gridProfile.profile);
+  mFull.gridDuration   = estimateGridDuration(mFull.gridRange.rangeWidthPct, mFull.atrPct ?? 1);
+
+  return { mFull, signals, score, direction, detail, bot, dirConds, rec };
+}
+
+// ── Incremental add: fetch one new ticker and append to UI ────────
+async function addAndRenderTicker(name, symbol) {
+  const fastTbody = document.getElementById('fast-tbody');
+  const mainTbody = document.getElementById('main-tbody');
+
+  // Append shimmer placeholder rows
+  if (fastTbody) fastTbody.insertAdjacentHTML('beforeend',
+    `<tr class="shimmer" id="shimmer-fast-${name}"><td>${name}</td>${'<td>…</td>'.repeat(10)}</tr>`);
+  if (mainTbody) mainTbody.insertAdjacentHTML('beforeend',
+    `<tr class="shimmer" id="shimmer-main-${name}"><td>${name}</td>${'<td>…</td>'.repeat(24)}</tr>`);
+
+  try {
+    const { mFull, signals, score, direction, detail, bot, dirConds, rec } = await fetchSingleTicker(name, symbol);
+
+    allMetrics[name]  = mFull;
+    allSignals[name]  = { price: mFull.price, signals };
+    allScores[name]   = { score, direction, detail };
+    allBots[name]     = bot;
+    allDirConds[name] = dirConds;
+    allRecs[name]     = rec;
+    lastAllMetrics    = allMetrics;
+
+    // Replace shimmer rows with real data
+    const shimmerFast = document.getElementById(`shimmer-fast-${name}`);
+    if (shimmerFast) shimmerFast.outerHTML = buildFastRow(name, mFull, symProvider[name]||'?', score, direction, dirConds, rec);
+    const deepTd = document.querySelector(`#deep-${name} td`);
+    if (deepTd) deepTd.innerHTML = buildDeepCard(name, mFull, score, direction, dirConds, rec, detail);
+
+    const shimmerMain = document.getElementById(`shimmer-main-${name}`);
+    if (shimmerMain) shimmerMain.outerHTML = buildTableRow(name, mFull, symProvider[name]||'?');
+
+    // Re-render sections that aggregate all tickers
+    const sorted = Object.entries(allScores).sort((a,b) => b[1].score - a[1].score);
+    const active = sorted.filter(([n]) => allBots[n]);
+    document.getElementById('bot-grid').innerHTML = active.length
+      ? active.map(([n,{score:s,direction:d}]) => buildBotCard(n, allBots[n], s, d)).join('')
+      : `<div class="empty">No asset has reached score ${CFG.SCORE_BOT_MIN} yet.<br><small>Watch for: 4H sweep or STRONG BUY/SELL pressure to upgrade score.</small></div>`;
+
+    document.getElementById('signals-grid').innerHTML =
+      Object.entries(allSignals).filter(([,v])=>v).map(([n,{price,signals:sigs}]) =>
+        buildSigCard(n, price, sigs, symProvider[n])
+      ).join('') || '<div class="empty" style="grid-column:1/-1">No signal data</div>';
+
+    document.getElementById('grid-risk-notice').innerHTML = renderCryptoRiskNotice(allMetrics);
+    document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, getGridCapital());
+
+    if (window._attachHeaderTips) window._attachHeaderTips();
+  } catch(e) {
+    console.error(`[${name}] addAndRenderTicker failed:`, e);
+    document.getElementById(`shimmer-fast-${name}`)?.remove();
+    document.getElementById(`shimmer-main-${name}`)?.remove();
+  }
+}
+
 // ══════════════════════════════════════════════════════════════════
 //  MAIN REFRESH LOOP
 // ══════════════════════════════════════════════════════════════════
@@ -121,7 +224,13 @@ async function fetchAndDisplay() {
     ).join('');
   }
 
-  const allMetrics = {}, allSignals = {}, allScores = {}, allBots = {}, allDirConds = {}, allRecs = {};
+  // Reset module-level state for full refresh
+  Object.keys(allMetrics).forEach(k => delete allMetrics[k]);
+  Object.keys(allSignals).forEach(k => delete allSignals[k]);
+  Object.keys(allScores).forEach(k  => delete allScores[k]);
+  Object.keys(allBots).forEach(k    => delete allBots[k]);
+  Object.keys(allDirConds).forEach(k => delete allDirConds[k]);
+  Object.keys(allRecs).forEach(k    => delete allRecs[k]);
 
   // ── Market Pulse (one-time global fetch, non-blocking) ─────────
   try {
@@ -134,55 +243,13 @@ async function fetchAndDisplay() {
 
   for (const [name, symbol] of Object.entries(SYMBOLS)) {
     try {
-      // 1. price + funding (with fallback)
-      const pf = await fetchPriceFunding(name, symbol);
-      symProvider[name] = pf.provider;
-
-      // 2. all advanced metrics (klines, OI, calculations)
-      const m  = await getAdvancedMetrics(name, symbol);
-
-      // 3. signals, score, bot
-      const signals = interpretSignals(
-        pf.price, m.rsi, m.atr, m.flow, m.oiChange,
-        m.poc5d, m.avwap5d, m.poc14d, m.avwap14d, m.avwap30d,
-        m.cvd5d, m.cvd14d, m.cvd30d,
-        m.structure4h, m.structure30d, m.sweep, m.fvgList,
-        m.emaFast, m.emaSlow, m.volSpike, m.volCurr, m.volAvg
-      );
-
-      const { score, direction, detail } = calcScore(
-        pf.price, m.atr, m.rsi, m.flow, m.oiChange,
-        m.poc5d, m.avwap5d, m.poc14d, m.avwap14d, m.avwap30d,
-        m.cvd5d, m.cvd14d, m.cvd30d,
-        m.structure4h, m.structure30d, m.sweep, m.fvgList,
-        m.emaFast, m.emaSlow
-      );
-
-      const bot = calcBotParams(pf.price, m.atr, score, direction, m.poc5d, m.poc14d, m.avwap5d, m.fvgList);
-
-      const mFull   = { ...m, price:pf.price, funding:pf.funding };
-      const dirConds = calcDirectionConditions(pf.price, m.emaSlow, m.structure4h, m.structure30d, m.avwap30d, m.rsi, m.adx?.adx ?? 0, direction);
-      const rec      = calcRecommendation(score, direction, m.atrPct ?? 0, pf.funding, m.rsi);
-
-      // Grid bot advisory calculations
-      const gridProfile = getTickerGridProfile(name);
-      mFull.gridProfile     = gridProfile;
-      mFull.gridViability   = assessGridViability(mFull.atrPct ?? 0, mFull.adx?.adx ?? 0, mFull.rsi, mFull.bbBw ?? 0, mFull.structure4h);
-      mFull.gridRange       = calcRangeFromATR(pf.price, mFull.atrPct ?? 1, gridProfile.rangeMultiplier);
-      mFull.gridRecommendation = calcRecommendedGridCount(mFull.gridRange.rangeHigh, mFull.gridRange.rangeLow);
-      mFull.gridProfitPerGrid  = calcGridProfitPerGrid(mFull.gridRange.rangeHigh, mFull.gridRange.rangeLow, mFull.gridRecommendation.recommended);
-      mFull.gridDrawdown    = calcDrawdownScenario(getGridCapital(), mFull.gridRange.rangeLow, pf.price, mFull.gridRange.rangeLow * 0.85);
-      mFull.gridMode        = selectGridMode(mFull.gridRange.rangeWidthPct);
-      mFull.gridSL          = calcGridStopLoss(mFull.gridRange.rangeLow);
-      mFull.gridTP          = calcGridTakeProfit(mFull.gridRange.rangeHigh);
-
-      allMetrics[name] = mFull;
-      allSignals[name] = { price:pf.price, signals };
-      allScores[name]  = { score, direction, detail };
-      allBots[name]    = bot;
+      const { mFull, signals, score, direction, detail, bot, dirConds, rec } = await fetchSingleTicker(name, symbol);
+      allMetrics[name]  = mFull;
+      allSignals[name]  = { price: mFull.price, signals };
+      allScores[name]   = { score, direction, detail };
+      allBots[name]     = bot;
       allDirConds[name] = dirConds;
       allRecs[name]     = rec;
-
     } catch(e) {
       console.error(`[${name}] FATAL:`, e);
       allMetrics[name] = null;

@@ -86,8 +86,10 @@ export function buildTableRow(name, m, prov) {
     else fvgH = col(`${typ}-FVG ${zone} d:${st.distPct.toFixed(2)}%`, g.type==='BULL'?"bull":"bear");
   }
   const provH = prov==='Bybit' ? `<span style="color:var(--orange);font-size:.6rem">BB</span>` : `<span style="color:var(--cyan2);font-size:.6rem">BN</span>`;
+  const tvEx  = prov==='Bybit' ? 'BYBIT' : 'BINANCE';
+  const tvLink = `<a href="https://www.tradingview.com/chart/?symbol=${tvEx}%3A${name}USDT.P" target="_blank" rel="noopener" class="tv-link">${name}</a>`;
   return `<tr>
-    <td>${name}</td><td>${fmt(m.price,2)}</td><td>${fundH}</td><td>${rsiH}</td>
+    <td>${tvLink}</td><td>${fmt(m.price,2)}</td><td>${fundH}</td><td>${rsiH}</td>
     <td>${fmt(m.atr,4)}</td><td>${flowH}</td><td>${fmt(m.poc5d,1)}</td>
     <td>${fmt(m.poc14d,1)}</td><td>${fmt(m.avwap5d,1)}</td>
     <td>${fmt(m.avwap14d,1)}</td><td>${fmt(m.avwap30d,1)}</td>
@@ -199,8 +201,10 @@ export function buildFastRow(name, m, prov, score, direction, dirConds, rec) {
 
   const recH = `<span class="rec-badge ${rec.recClass}">${rec.rec}</span>`;
 
+  const tvExF  = prov === 'Bybit' ? 'BYBIT' : 'BINANCE';
+  const tvLinkF = `<a href="https://www.tradingview.com/chart/?symbol=${tvExF}%3A${name}USDT.P" target="_blank" rel="noopener" class="tv-link">${name}</a>`;
   return `<tr class="fast-row" data-name="${name}">
-    <td style="text-align:left">${name} ${provH}</td>
+    <td style="text-align:left">${tvLinkF} ${provH}</td>
     <td>${fmt(m.price,2)}</td>
     <td>${chgH}</td>
     <td>${scoreH}</td>
@@ -269,6 +273,12 @@ export function renderGridPanel(allMetrics, capital) {
       badge = `<span class="grid-badge ok">GRID OK</span>`;
     }
 
+    // Direction badge
+    const dir = m.gridDirection;
+    const dirBadge = dir
+      ? `<span class="grid-badge ${dir.type === 'Long' ? 'dir-long' : dir.type === 'Short' ? 'dir-short' : 'dir-neutral'}" title="${dir.reason}">${dir.label}</span>`
+      : '';
+
     // Recommended setup block
     let setupHtml = '';
     if (v.viable && range && rec && profit) {
@@ -282,6 +292,7 @@ export function renderGridPanel(allMetrics, capital) {
       setupHtml = `<div class="grid-setup">
         <div class="grid-setup-title">Recommended Setup</div>
         <div class="grid-params">
+          <div class="grid-param-row"><span class="grid-param-label">Type</span><span class="grid-param-val">${dir?.label ?? 'Neutral Grid'} <em style="opacity:.6;font-size:.68rem">${dir?.reason ?? ''}</em></span></div>
           <div class="grid-param-row"><span class="grid-param-label">Range</span><span class="grid-param-val">$${fmt(range.rangeLow,2)} — $${fmt(range.rangeHigh,2)} <em>(${fmt(range.rangeWidthPct,1)}%)</em></span></div>
           <div class="grid-param-row"><span class="grid-param-label">Grid Count</span><span class="grid-param-val">${rec.recommended} <em>(min ${rec.min}, max ${rec.max})</em></span></div>
           <div class="grid-param-row"><span class="grid-param-label">Mode</span><span class="grid-param-val">${mode.mode} <em style="opacity:.6;font-size:.68rem">${mode.reason}</em></span></div>
@@ -318,42 +329,45 @@ export function renderGridPanel(allMetrics, capital) {
       warningsHtml = `<div class="grid-warnings">${warnItems.join('')}</div>`;
     }
 
-    // Copyable checklist
-    let checklistHtml = '';
-    if (v.viable && range && rec && profit) {
-      const capitalPerGrid = capital / rec.recommended;
-      const profitUSDT     = capitalPerGrid * profit.netPct;
-      const ddPct          = dd ? (dd.drawdownPct * 100).toFixed(1) : '—';
-      const ddUSDT         = dd ? fmt(dd.drawdownUSDT, 2) : '—';
-      const triggerPrice   = (m.price >= range.rangeLow && m.price <= range.rangeHigh)
-        ? m.price : (range.rangeLow + range.rangeHigh) / 2;
-      const checklistText =
-`[Spot Grid] [${name}/USDT]
-Range: $${fmt(range.rangeLow,2)} — $${fmt(range.rangeHigh,2)}
-Grids: ${rec.recommended} (${mode.mode})
-Capital: $${fmt(capital,0)} | Capital/Grid: $${fmt(capitalPerGrid,2)}
-Profit/Grid (net): ${(profit.netPct*100).toFixed(3)}% (~$${fmt(profitUSDT,2)})
-Trigger: $${fmt(triggerPrice,2)}
-TP: $${fmt(tp,2)} | SL: $${fmt(sl,2)}
-Max Drawdown (worst-case): $${ddUSDT} (${ddPct}%)`;
+    // Market context block — key indicators for go/no-go decision
+    const adxVal  = m.adx?.adx ?? 0;
+    const adxCls  = adxVal > GRID_CONFIG.VIABILITY.ADX_BLOCK ? 'bear' : adxVal > GRID_CONFIG.VIABILITY.BEARISH_ADX_BLOCK ? 'warn' : 'bull';
+    const rsiVal  = m.rsi ?? 0;
+    const rsiCls  = rsiVal > GRID_CONFIG.VIABILITY.RSI_BLOCK ? 'bear' : rsiVal < GRID_CONFIG.VIABILITY.RSI_WARN_LOW ? 'warn' : 'neutral';
+    const bbVal   = m.bbBw ?? 0;
+    const bbCls   = bbVal < GRID_CONFIG.VIABILITY.BB_MIN ? 'bear' : 'neutral';
+    const flowVal = m.flow ?? 0;
+    const flowLbl = flowVal > 2 ? 'Buy' : flowVal < -2 ? 'Sell' : 'Neutral';
+    const flowCls = flowVal > 2 ? 'bull' : flowVal < -2 ? 'bear' : 'neutral';
+    const dur     = m.gridDuration;
+    const scoreV  = m.gridScore ?? 0;
 
-      checklistHtml = `<div class="grid-checklist">
-        <div class="grid-setup-title">Checklist <button class="btn grid-copy-btn" data-text="${checklistText.replace(/"/g,'&quot;')}">Copy</button></div>
-        <pre class="grid-checklist-text">${checklistText}</pre>
-      </div>`;
-    }
+    const contextHtml = `<div class="grid-context">
+      <div class="grid-setup-title">Market Context</div>
+      <div class="grid-context-grid">
+        <div class="grid-ctx-item"><span class="grid-ctx-label">Score</span><span class="grid-ctx-val ${scClass(scoreV)}">${fmt(scoreV,1)}</span></div>
+        <div class="grid-ctx-item"><span class="grid-ctx-label">ADX</span><span class="grid-ctx-val ${adxCls}">${fmt(adxVal,1)}</span></div>
+        <div class="grid-ctx-item"><span class="grid-ctx-label">RSI</span><span class="grid-ctx-val ${rsiCls}">${fmt(rsiVal,1)}</span></div>
+        <div class="grid-ctx-item"><span class="grid-ctx-label">BB Width</span><span class="grid-ctx-val ${bbCls}">${fmt(bbVal,1)}%</span></div>
+        <div class="grid-ctx-item"><span class="grid-ctx-label">ATR%</span><span class="grid-ctx-val">${fmt(m.atrPct,2)}%</span></div>
+        <div class="grid-ctx-item"><span class="grid-ctx-label">Structure</span><span class="grid-ctx-val">${sCol(m.structure4h ?? '—')}</span></div>
+        <div class="grid-ctx-item"><span class="grid-ctx-label">Flow</span><span class="grid-ctx-val ${flowCls}">${flowLbl} ${fmt(Math.abs(flowVal),1)}%</span></div>
+        <div class="grid-ctx-item"><span class="grid-ctx-label">Est. Duration</span><span class="grid-ctx-val">${dur?.label ?? '—'}</span></div>
+      </div>
+    </div>`;
 
     return `<div class="grid-card">
       <div class="grid-card-head">
         <span class="grid-ticker">${name}</span>
         <span class="grid-price">$${fmt(m.price,2)}</span>
         ${badge}
+        ${dirBadge}
         <span class="grid-profile" style="opacity:.5;font-size:.65rem">${m.gridProfile?.profile ?? ''}</span>
       </div>
+      ${contextHtml}
       ${setupHtml}
       ${drawdownHtml}
       ${warningsHtml}
-      ${checklistHtml}
     </div>`;
   }).join('');
 

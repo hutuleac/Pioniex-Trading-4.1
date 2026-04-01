@@ -1,5 +1,7 @@
 'use strict';
 
+import { GRID_CONFIG } from './config.js';
+
 // ══════════════════════════════════════════════════════════════════
 //  GRID BOT CALCULATIONS  —  pure functions, no side effects
 //  All field names match actual allMetrics object in app.js:
@@ -10,14 +12,17 @@
 
 /**
  * Net profit per grid after fees.
- * Formula: ((rangeHigh - rangeLow) / rangeLow / gridCount) - (feePct * 2)
+ * Arithmetic: (range%) / gridCount  — fixed $ per step
+ * Geometric:  (rangeHigh/rangeLow)^(1/n) − 1  — consistent % per step
  * @returns {{ grossPct, feeCost, netPct, isViable }}
  */
-export function calcGridProfitPerGrid(rangeHigh, rangeLow, gridCount, feePct = 0.001) {
-  const grossPct = (rangeHigh - rangeLow) / rangeLow / gridCount;
+export function calcGridProfitPerGrid(rangeHigh, rangeLow, gridCount, feePct = GRID_CONFIG.FEE_PCT, isGeometric = false) {
+  const grossPct = isGeometric
+    ? Math.pow(rangeHigh / rangeLow, 1 / gridCount) - 1
+    : (rangeHigh - rangeLow) / rangeLow / gridCount;
   const feeCost  = feePct * 2;
   const netPct   = grossPct - feeCost;
-  return { grossPct, feeCost, netPct, isViable: netPct >= 0.006 };
+  return { grossPct, feeCost, netPct, isViable: netPct >= GRID_CONFIG.MIN_NET_PCT };
 }
 
 /**
@@ -45,7 +50,7 @@ export function calcDrawdownScenario(totalCapital, rangeLow, currentPrice, crash
  * Works backwards from target net profit/grid to find viable grid count.
  * @returns {{ recommended, min, max }}
  */
-export function calcRecommendedGridCount(rangeHigh, rangeLow, targetNetPctPerGrid = 0.008, feePct = 0.001) {
+export function calcRecommendedGridCount(rangeHigh, rangeLow, targetNetPctPerGrid = GRID_CONFIG.TARGET_NET_PCT, feePct = GRID_CONFIG.FEE_PCT) {
   const totalRange = (rangeHigh - rangeLow) / rangeLow;
   const feeCost    = feePct * 2;
 
@@ -70,14 +75,41 @@ export function calcRecommendedGridCount(rangeHigh, rangeLow, targetNetPctPerGri
 }
 
 /**
- * Derives a grid range from ATR%.
+ * Derives a grid range from ATR%, adjusted for grid direction.
+ * Neutral: symmetric around price.
+ * Long:    range sits below price — accumulate on dips.
+ * Short:   range sits above price — sell into pumps.
  * @returns {{ rangeLow, rangeHigh, rangeWidthPct }}
  */
-export function calcRangeFromATR(currentPrice, atrPct, multiplier = 2.5) {
-  const rangeLow      = currentPrice * (1 - (atrPct / 100) * multiplier);
-  const rangeHigh     = currentPrice * (1 + (atrPct / 100) * multiplier);
+export function calcRangeFromATR(currentPrice, atrPct, multiplier = GRID_CONFIG.ATR_MULTIPLIER_DEFAULT, gridType = 'Neutral') {
+  const offset = (atrPct / 100) * multiplier;
+  let rangeLow, rangeHigh;
+  if (gridType === 'Long') {
+    rangeLow  = currentPrice * (1 - offset * 2);
+    rangeHigh = currentPrice * (1 + offset * 0.25);
+  } else if (gridType === 'Short') {
+    rangeLow  = currentPrice * (1 - offset * 0.25);
+    rangeHigh = currentPrice * (1 + offset * 2);
+  } else {
+    rangeLow  = currentPrice * (1 - offset);
+    rangeHigh = currentPrice * (1 + offset);
+  }
   const rangeWidthPct = ((rangeHigh - rangeLow) / rangeLow) * 100;
   return { rangeLow, rangeHigh, rangeWidthPct };
+}
+
+/**
+ * Selects grid direction (Long / Short / Neutral) from market structure + score.
+ * Uses GRID_CONFIG.DIRECTION thresholds for conservative selection.
+ * @returns {{ type: string, label: string, reason: string }}
+ */
+export function selectGridDirection(structure4h, score) {
+  const D = GRID_CONFIG.DIRECTION;
+  if (structure4h === 'Bullish' && score >= D.LONG_MIN_SCORE)
+    return { type: 'Long',    label: 'Long Grid',    reason: 'Bullish structure — range biased below price to accumulate on dips' };
+  if (structure4h === 'Bearish' && score < D.SHORT_MAX_SCORE)
+    return { type: 'Short',   label: 'Short Grid',   reason: 'Bearish structure — range biased above price to sell into pumps' };
+  return   { type: 'Neutral', label: 'Neutral Grid', reason: 'No strong directional bias — range straddles current price' };
 }
 
 /**
@@ -85,64 +117,73 @@ export function calcRangeFromATR(currentPrice, atrPct, multiplier = 2.5) {
  * @returns {{ mode: string, reason: string }}
  */
 export function selectGridMode(rangeWidthPct) {
-  if (rangeWidthPct >= 20) {
-    return { mode: 'Geometric', reason: 'Wide range (≥20%) — geometric grids maintain consistent % profit per step' };
+  if (rangeWidthPct >= GRID_CONFIG.GEOMETRIC_THRESHOLD_PCT) {
+    return { mode: 'Geometric', reason: `Wide range (≥${GRID_CONFIG.GEOMETRIC_THRESHOLD_PCT}%) — geometric grids maintain consistent % profit per step` };
   }
-  return { mode: 'Arithmetic', reason: 'Narrow range (<20%) — arithmetic grids are simpler and effective' };
+  return { mode: 'Arithmetic', reason: `Narrow range (<${GRID_CONFIG.GEOMETRIC_THRESHOLD_PCT}%) — arithmetic grids are simpler and effective` };
 }
 
 /**
  * Stop loss price: sits below the lower bound.
+ * Buffer scales with volatility profile via GRID_CONFIG.SL_BUFFERS.
  * @returns {number}
  */
-export function calcGridStopLoss(rangeLow, bufferPct = 0.12) {
-  return rangeLow * (1 - bufferPct);
+export function calcGridStopLoss(rangeLow, profile = 'moderate') {
+  const buf = GRID_CONFIG.SL_BUFFERS[profile] ?? GRID_CONFIG.SL_BUFFERS.moderate;
+  return rangeLow * (1 - buf);
 }
 
 /**
  * Take profit price: sits above the upper bound.
+ * Buffer scales with volatility profile via GRID_CONFIG.TP_BUFFERS.
  * @returns {number}
  */
-export function calcGridTakeProfit(rangeHigh, bufferPct = 0.05) {
-  return rangeHigh * (1 + bufferPct);
+export function calcGridTakeProfit(rangeHigh, profile = 'moderate') {
+  const buf = GRID_CONFIG.TP_BUFFERS[profile] ?? GRID_CONFIG.TP_BUFFERS.moderate;
+  return rangeHigh * (1 + buf);
 }
 
 /**
  * Assesses whether market conditions are suitable for a grid bot.
- * Uses actual allMetrics field names:
- *   adx      → pass allMetrics[name].adx.adx
- *   bbBw     → pass allMetrics[name].bbBw
- *   structure → pass allMetrics[name].structure4h
- *
+ * All thresholds driven by GRID_CONFIG.VIABILITY for central control.
  * @returns {{ viable: boolean, reason: string, warning: string|null }}
  */
 export function assessGridViability(atrPct, adx, rsi, bbBw, structure) {
-  // Block conditions
-  if (adx > 25) {
-    return { viable: false, reason: `ADX=${adx.toFixed(1)}: strong trend detected — grid bots underperform in trending markets`, warning: null };
-  }
-  if (rsi > 70) {
-    return { viable: false, reason: `RSI=${rsi.toFixed(1)}: overbought — wait for pullback before starting`, warning: null };
-  }
-  if (bbBw < 1.5) {
-    return { viable: false, reason: `BB Bandwidth=${bbBw.toFixed(2)}%: market too compressed — volatility too low for grid profit`, warning: null };
-  }
-  if (structure === 'Bearish' && adx > 20) {
-    return { viable: false, reason: `Bearish structure + ADX=${adx.toFixed(1)}: downtrend with momentum — high bot failure risk`, warning: null };
-  }
+  const V = GRID_CONFIG.VIABILITY;
 
-  // Warn conditions (viable but caution)
+  if (adx > V.ADX_BLOCK)
+    return { viable: false, reason: `ADX=${adx.toFixed(1)}: trend detected (>${V.ADX_BLOCK}) — grid bots underperform in trending markets`, warning: null };
+  if (rsi > V.RSI_BLOCK)
+    return { viable: false, reason: `RSI=${rsi.toFixed(1)}: overbought (>${V.RSI_BLOCK}) — wait for pullback before starting`, warning: null };
+  if (bbBw < V.BB_MIN)
+    return { viable: false, reason: `BB Bandwidth=${bbBw.toFixed(2)}%: too compressed (<${V.BB_MIN}%) — insufficient volatility for grid profit`, warning: null };
+  if (structure === 'Bearish' && adx > V.BEARISH_ADX_BLOCK)
+    return { viable: false, reason: `Bearish structure + ADX=${adx.toFixed(1)} (>${V.BEARISH_ADX_BLOCK}): downtrend with momentum — high bot failure risk`, warning: null };
+
   const warnings = [];
-  if (atrPct > 5)          warnings.push(`ATR=${atrPct.toFixed(1)}%: high volatility — use Geometric mode and widen range`);
-  if (rsi > 60)            warnings.push(`RSI=${rsi.toFixed(1)}: elevated — mild overbought pressure`);
+  if (atrPct > V.ATR_WARN)    warnings.push(`ATR=${atrPct.toFixed(1)}%: elevated volatility — use Geometric mode and widen range`);
+  if (rsi > V.RSI_WARN_HIGH)  warnings.push(`RSI=${rsi.toFixed(1)}: elevated — mild overbought pressure`);
+  if (rsi < V.RSI_WARN_LOW)   warnings.push(`RSI=${rsi.toFixed(1)}: oversold — confirm structure before starting, price may continue lower`);
   if (structure === 'Neutral') warnings.push('Neutral market structure — range may shift; monitor closely');
 
-  const warning = warnings.length > 0 ? warnings.join(' | ') : null;
-  return { viable: true, reason: 'Market conditions suitable for grid bot', warning };
+  return { viable: true, reason: 'Market conditions suitable for grid bot', warning: warnings.length ? warnings.join(' | ') : null };
 }
 
 /**
- * Returns hardcoded volatility profile per ticker symbol.
+ * Estimates how many days a grid should run based on range width vs daily ATR.
+ * ATR is 4h-based; multiply by ~1.5 to approximate daily range.
+ * @returns {{ estDays: number, label: string }}
+ */
+export function estimateGridDuration(rangeWidthPct, atrPct) {
+  const dailyRangePct = atrPct * 1.5;
+  if (dailyRangePct <= 0) return { estDays: 0, label: '—' };
+  const estDays = Math.max(1, Math.min(Math.round(rangeWidthPct / dailyRangePct), 30));
+  const label   = estDays <= 3 ? '1–3 days' : estDays <= 7 ? '3–7 days' : estDays <= 14 ? '1–2 weeks' : '2–4 weeks';
+  return { estDays, label };
+}
+
+/**
+ * Returns volatility profile per ticker symbol.
  * @returns {{ profile: string, rangeMultiplier: number, maxGrids: number }}
  */
 export function getTickerGridProfile(ticker) {
@@ -152,6 +193,9 @@ export function getTickerGridProfile(ticker) {
     BNB:  { profile: 'stable',   rangeMultiplier: 2.5, maxGrids: 30 },
     SOL:  { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
     TRX:  { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
+    DOGE: { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
+    XLM:  { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
+    XRP:  { profile: 'moderate', rangeMultiplier: 3.0, maxGrids: 40 },
     SUI:  { profile: 'volatile', rangeMultiplier: 3.5, maxGrids: 50 },
     HYPE: { profile: 'volatile', rangeMultiplier: 3.5, maxGrids: 50 },
   };

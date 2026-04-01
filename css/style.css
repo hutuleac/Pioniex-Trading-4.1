@@ -120,6 +120,8 @@ tr.shimmer td{color:var(--dim);animation:pulse .9s infinite;}
 .bear{color:var(--red);}
 .neutral{color:var(--text2);}
 .warn{color:var(--yellow);}
+.tv-link{color:inherit;text-decoration:none;border-bottom:1px dotted rgba(255,255,255,.2);}
+.tv-link:hover{color:var(--cyan);border-bottom-color:var(--cyan);}
 /* ── SIGNALS GRID ────────────────────────────────────────── */
 .signals-grid{display:grid;gap:12px;grid-template-columns:repeat(auto-fill,minmax(310px,1fr));}
 .sig-card{background:var(--card);border:1px solid var(--border);border-radius:10px;overflow:hidden;transition:border-color .3s cubic-bezier(.4,0,.2,1),box-shadow .3s cubic-bezier(.4,0,.2,1),transform .3s cubic-bezier(.4,0,.2,1);}
@@ -317,8 +319,16 @@ th .tiptext{display:none !important;}
 .grid-badge.ok{background:rgba(0,230,118,.15);color:var(--green);}
 .grid-badge.avoid{background:rgba(255,26,75,.15);color:var(--red);}
 .grid-badge.caution{background:rgba(255,215,0,.13);color:var(--yellow);}
-.grid-setup,.grid-drawdown,.grid-warnings,.grid-checklist{padding:10px 14px;border-top:1px solid var(--border);}
+.grid-badge.dir-long{background:rgba(0,230,118,.10);color:var(--green);border:1px solid rgba(0,230,118,.25);}
+.grid-badge.dir-short{background:rgba(255,26,75,.10);color:var(--red);border:1px solid rgba(255,26,75,.25);}
+.grid-badge.dir-neutral{background:rgba(180,180,180,.08);color:var(--text2);border:1px solid rgba(180,180,180,.18);}
+.grid-setup,.grid-drawdown,.grid-warnings,.grid-context{padding:10px 14px;border-top:1px solid var(--border);}
 .grid-setup-title{font-size:.78rem;font-weight:700;color:var(--text2);text-transform:uppercase;letter-spacing:.09em;margin-bottom:8px;}
+.grid-context-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px 10px;}
+.grid-ctx-item{display:flex;flex-direction:column;gap:2px;}
+.grid-ctx-label{font-size:.60rem;color:var(--text2);text-transform:uppercase;letter-spacing:.07em;}
+.grid-ctx-val{font-family:'IBM Plex Mono',monospace;font-size:.78rem;font-weight:500;}
+@media(max-width:600px){.grid-context-grid{grid-template-columns:repeat(2,1fr);}}
 .grid-params{display:flex;flex-direction:column;gap:5px;}
 .grid-param-row{display:flex;justify-content:space-between;align-items:baseline;font-size:.88rem;}
 .grid-param-label{color:var(--text2);flex-shrink:0;margin-right:8px;}

@@ -64,14 +64,33 @@ export const LEGENDS = [
 //  GRID BOT CONFIG
 // ══════════════════════════════════════════════════════════════════
 export const GRID_CONFIG = {
-  DEFAULT_CAPITAL      : 500,
-  FEE_PCT              : 0.001,   // 0.1% per side, 0.2% round-trip per grid
-  TARGET_NET_PCT       : 0.006,   // 0.6% target net profit per grid
-  MIN_NET_PCT          : 0.005,   // minimum viable profit per grid
-  SL_BUFFER_PCT        : 0.10,    // SL sits 10% below lower bound
-  TP_BUFFER_PCT        : 0.05,    // TP sits 5% above upper bound
+  DEFAULT_CAPITAL        : 500,
+  FEE_PCT                : 0.001,  // 0.1% per side, 0.2% round-trip per grid
+  TARGET_NET_PCT         : 0.008,  // target net profit per grid (0.8%)
+  MIN_NET_PCT            : 0.006,  // minimum viable net profit per grid
   ATR_MULTIPLIER_DEFAULT : 2.5,
-  GEOMETRIC_THRESHOLD_PCT: 20,    // use Geometric mode if range > 20%
+  GEOMETRIC_THRESHOLD_PCT: 20,     // use Geometric mode if range > 20%
+
+  // SL/TP buffers scaled to volatility profile (~7-7.5/10 risk)
+  SL_BUFFERS: { stable: 0.06, moderate: 0.09, volatile: 0.13 },
+  TP_BUFFERS: { stable: 0.04, moderate: 0.05, volatile: 0.07 },
+
+  // Viability block/warn thresholds — tightened for conservative grid selection
+  VIABILITY: {
+    ADX_BLOCK        : 22,   // block if ADX above this (trending market)
+    RSI_BLOCK        : 68,   // block if RSI above this (overbought)
+    BB_MIN           : 2.0,  // block if BB bandwidth below this (compressed)
+    BEARISH_ADX_BLOCK: 18,   // block if Bearish structure + ADX above this
+    ATR_WARN         : 4.5,  // warn if ATR% above this (high volatility)
+    RSI_WARN_HIGH    : 58,   // warn if RSI above this (elevated pressure)
+    RSI_WARN_LOW     : 32,   // warn if RSI below this (oversold risk)
+  },
+
+  // Direction selection thresholds — require stronger conviction
+  DIRECTION: {
+    LONG_MIN_SCORE : 6.5,  // score must be >= this for Long Grid
+    SHORT_MAX_SCORE: 4.5,  // score must be < this for Short Grid
+  },
 };
 
 export function getGridCapital() {
