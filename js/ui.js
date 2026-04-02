@@ -251,7 +251,7 @@ export function renderCryptoRiskNotice(allMetrics) {
 }
 
 // ── Grid Bot Panel (per-ticker cards) ────────────────────────────
-export function renderGridPanel(allMetrics, capital) {
+export function renderGridPanel(allMetrics, allSignals, capital) {
   const cards = Object.entries(allMetrics).map(([name, m]) => {
     if (!m || !m.gridViability) return '';
     const v      = m.gridViability;
@@ -329,6 +329,17 @@ export function renderGridPanel(allMetrics, capital) {
       warningsHtml = `<div class="grid-warnings">${warnItems.join('')}</div>`;
     }
 
+    // Active Signals strip — 3 grid-relevant signals not already in Market Context
+    const sigData = (allSignals && allSignals[name]?.signals) ?? {};
+    const GAS_KEYS = ['Setup', 'Bot Grid', 'Presiune'];
+    const signalsHtml = (() => {
+      const pills = GAS_KEYS.map(key => {
+        const [val, cls] = sigData[key] || ['—', 'neutral'];
+        return `<span class="gas-pill ${cls}"><span class="gas-name">${key}</span><span class="gas-val">${val}</span></span>`;
+      }).join('');
+      return `<div class="grid-active-signals"><div class="grid-setup-title">Active Signals</div><div class="gas-pills">${pills}</div></div>`;
+    })();
+
     // Market context block — key indicators for go/no-go decision
     const adxVal  = m.adx?.adx ?? 0;
     const adxCls  = adxVal > GRID_CONFIG.VIABILITY.ADX_BLOCK ? 'bear' : adxVal > GRID_CONFIG.VIABILITY.BEARISH_ADX_BLOCK ? 'warn' : 'bull';
@@ -365,6 +376,7 @@ export function renderGridPanel(allMetrics, capital) {
         <span class="grid-profile" style="opacity:.5;font-size:.65rem">${m.gridProfile?.profile ?? ''}</span>
       </div>
       ${contextHtml}
+      ${signalsHtml}
       ${setupHtml}
       ${drawdownHtml}
       ${warningsHtml}
@@ -373,6 +385,7 @@ export function renderGridPanel(allMetrics, capital) {
 
   return `<div class="section">
     <div class="section-title">Grid Bot Advisor · Spot Grid Setup Guide</div>
+    <div class="section-sub">Grid bots profit from <strong>sideways chop</strong>, not direction. GRID OK does not mean a strong trade setup — they answer different questions. Ideal conditions: ADX &lt; 20 (no trend) + tight BB + moderate ATR. A bearish asset with low ADX can be a better grid candidate than a bullish trending one.</div>
     <div class="grid-bot-panel">${cards || '<div class="empty">No grid data — refresh to load</div>'}</div>
   </div>`;
 }

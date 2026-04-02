@@ -8,7 +8,7 @@ import { calcRangeFromATR, calcRecommendedGridCount, calcGridProfitPerGrid,
 import { fetchPriceFunding, fetchMarketPulse } from './api.js';
 import { getAdvancedMetrics, interpretSignals, calcScore, calcBotParams,
          calcRecommendation, calcDirectionConditions } from './indicators.js';
-import { buildTableRow, buildSigCard, buildBotCard,
+import { buildTableRow, buildBotCard,
          buildFastRow, buildDeepCard, renderCryptoRiskNotice, renderGridPanel,
          buildMarketPulseStrip } from './ui.js';
 
@@ -187,13 +187,8 @@ async function addAndRenderTicker(name, symbol) {
       ? active.map(([n,{score:s,direction:d}]) => buildBotCard(n, allBots[n], s, d)).join('')
       : `<div class="empty">No asset has reached score ${CFG.SCORE_BOT_MIN} yet.<br><small>Watch for: 4H sweep or STRONG BUY/SELL pressure to upgrade score.</small></div>`;
 
-    document.getElementById('signals-grid').innerHTML =
-      Object.entries(allSignals).filter(([,v])=>v).map(([n,{price,signals:sigs}]) =>
-        buildSigCard(n, price, sigs, symProvider[n])
-      ).join('') || '<div class="empty" style="grid-column:1/-1">No signal data</div>';
-
     document.getElementById('grid-risk-notice').innerHTML = renderCryptoRiskNotice(allMetrics);
-    document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, getGridCapital());
+    document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, allSignals, getGridCapital());
 
     if (window._attachHeaderTips) window._attachHeaderTips();
   } catch(e) {
@@ -284,12 +279,6 @@ async function fetchAndDisplay() {
     return buildTableRow(name, m, symProvider[name]||'?');
   }).join('') || `<tr><td colspan="25" class="empty">No data</td></tr>`;
 
-  // ── Render signals ─────────────────────────────────────────────
-  document.getElementById('signals-grid').innerHTML =
-    Object.entries(allSignals).filter(([,v])=>v).map(([name,{price,signals}]) =>
-      buildSigCard(name, price, signals, symProvider[name])
-    ).join('') || '<div class="empty" style="grid-column:1/-1">No signal data</div>';
-
   // ── Render bots ────────────────────────────────────────────────
   const sorted = Object.entries(allScores).sort((a,b) => b[1].score - a[1].score);
   const active = sorted.filter(([n]) => allBots[n]);
@@ -300,7 +289,7 @@ async function fetchAndDisplay() {
   // ── Render grid bot advisor ────────────────────────────────────
   lastAllMetrics = allMetrics;
   document.getElementById('grid-risk-notice').innerHTML = renderCryptoRiskNotice(allMetrics);
-  document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, getGridCapital());
+  document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, allSignals, getGridCapital());
 
   // Wire copy buttons (after innerHTML is set)
   document.querySelectorAll('.grid-copy-btn').forEach(btn => {

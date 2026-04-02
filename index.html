@@ -41,6 +41,7 @@
 <!-- PART 1: FAST DECISION TABLE -->
 <div class="section">
   <div class="section-title">Fast Decision</div>
+  <div class="section-sub">The <strong>Rec</strong> column is a directional trade signal — it answers "is there a momentum setup right now?" based on score, structure, and CVD. <strong>Enter</strong> = high-confidence · <strong>Watch</strong> = developing · <strong>Avoid</strong> = no edge. This is independent of grid bot viability, which is assessed separately below.</div>
   <div class="table-wrap">
     <table class="fast-table">
       <thead><tr>
@@ -62,6 +63,10 @@
     </table>
   </div>
 </div>
+
+<!-- GRID BOT ADVISOR -->
+<div id="grid-risk-notice"></div>
+<div id="grid-panel"></div>
 
 <!-- PART 2: FULL METRICS (collapsible) -->
 <div class="section">
@@ -109,18 +114,6 @@
   <div class="section-title">Active Bot Parameters · Score ≥ 7.5</div>
   <div class="bot-grid" id="bot-grid">
     <div class="empty">No asset has reached score 7.5 yet</div>
-  </div>
-</div>
-
-<!-- GRID BOT ADVISOR -->
-<div id="grid-risk-notice"></div>
-<div id="grid-panel"></div>
-
-<!-- SIGNALS -->
-<div class="section">
-  <div class="section-title">Signal Analysis · Per Symbol</div>
-  <div class="signals-grid" id="signals-grid">
-    <div class="empty" style="grid-column:1/-1">Loading…</div>
   </div>
 </div>
 
