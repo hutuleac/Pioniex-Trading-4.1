@@ -69,11 +69,17 @@ When spawning subagents (Agent/Task tool), the routing block is automatically in
 
 ---
 
+## Git Workflow
+
+After every commit, always push immediately to `origin master` without asking for confirmation. Never leave commits unpushed.
+
+---
+
 # Pioniex Trading Dashboard — Project Reference
 
 ## Project Overview
 
-CIM (Crypto Intelligence Matrix) — a client-side crypto futures monitoring dashboard (v5.2). Fetches live data from Binance Futures (primary) and Bybit V5 (fallback), calculates technical indicators entirely in the browser, and scores assets 0–10 to surface trading setups. Includes Market Pulse topbar (Fear & Greed, Smart Money, 24h Volume), signal edge bars, and responsive layout. Deployed on Vercel. No backend, no build step.
+CIM (Crypto Intelligence Matrix) — a client-side crypto futures monitoring dashboard (v5.4). Fetches live data from Binance Futures (primary) and Bybit V5 (fallback), calculates technical indicators entirely in the browser, and scores assets 0–10 to surface trading setups. Includes Market Pulse topbar (Fear & Greed, Smart Money, 24h Volume), signal edge bars, and responsive layout. Deployed on Vercel. No backend, no build step.
 
 **Stack:** Vanilla HTML + CSS + ES Modules (`<script type="module">`) · Google Fonts (Chakra Petch, IBM Plex Mono) · Vercel Analytics
 
@@ -130,7 +136,7 @@ app.js::fetchAndDisplay()
 
 | Constant | Value | Notes |
 |----------|-------|-------|
-| `CFG.APP_VERSION` | `'5.2'` | Update on releases |
+| `CFG.APP_VERSION` | `'5.4'` | Update on releases |
 | `CFG.REFRESH_INTERVAL_SEC` | `1200` | 20 min auto-refresh |
 | `CFG.SCORE_BOT_MIN` | `7.5` | Score threshold for bot params activation |
 | `CFG.RSI_OB/OS` | `70 / 30` | Standard overbought/oversold |
@@ -184,13 +190,12 @@ app.js::fetchAndDisplay()
 
 1. **Fast Decision table** — click any row to expand the deep card inline
 2. **Deep card** (expanded) — 4 indicator groups (Trend/Momentum/Volatility/Setup) + direction checklist + Score Components table
-3. **Full Metrics table** — all raw indicator values
-4. **Signal Analysis** — per-symbol signal cards
+3. **Grid Bot Advisor** — `#grid-risk-notice` + `#grid-panel` rendered immediately after Fast Decision
+4. **Full Metrics table** — all raw indicator values (collapsible)
 5. **Active Bot Parameters** — cards for assets scoring ≥7.5
-6. **Grid Bot Advisor** — spot grid setup guide per ticker
-7. **Reference Guide** — legend
+6. **Reference Guide** — legend (glossary collapsible)
 
-The Score Analysis table was removed. Score data now lives exclusively inside the deep card's "Score Components" section (`buildDeepCard` receives `detail` from `calcScore()`).
+Signal Analysis section was removed in v5.4. Score data lives exclusively inside the deep card's "Score Components" section (`buildDeepCard` receives `detail` from `calcScore()`). Score Analysis table was also removed earlier.
 
 ## CSS Color System
 
