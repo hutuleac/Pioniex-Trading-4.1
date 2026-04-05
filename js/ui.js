@@ -124,7 +124,9 @@ export function buildSigCard(name, price, signals, prov) {
 }
 
 // ── Bot card ──────────────────────────────────────────────────────
-export function buildBotCard(name, bot, score, dir) {
+export function buildBotCard(name, bot, score, dir, prov) {
+  const tvEx   = prov==='Bybit' ? 'BYBIT' : 'BINANCE';
+  const tvLink = `<a href="https://www.tradingview.com/chart/?symbol=${tvEx}%3A${name}USDT.P" target="_blank" rel="noopener" class="tv-link">${name}</a>`;
   const cls = dir==="LONG"?"long":"short", dc = dir==="LONG"?"bull":"bear";
   const rules = dir==="LONG" ? `
     <p>1. Wait for 4H close above ${fmt(bot.entry,4)}</p>
@@ -152,7 +154,7 @@ export function buildBotCard(name, bot, score, dir) {
   const botEdge = dir==='LONG' ? 'edge-bull' : 'edge-bear';
   return `<div class="bot-card ${botEdge}">
     <div class="bot-head ${cls}">
-      <span class="bot-title ${dc}">${name} — ${bot.side}</span>
+      <span class="bot-title ${dc}">${tvLink} — ${bot.side}</span>
       <span style="font-family:'IBM Plex Mono',monospace;font-size:.72rem">Score: <span class="${scClass(score)}">${score.toFixed(2)}/10</span></span>
     </div>
     <div class="bot-params">${params}</div>

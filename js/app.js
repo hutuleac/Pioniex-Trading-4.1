@@ -184,7 +184,7 @@ async function addAndRenderTicker(name, symbol) {
     const sorted = Object.entries(allScores).sort((a,b) => b[1].score - a[1].score);
     const active = sorted.filter(([n]) => allBots[n]);
     document.getElementById('bot-grid').innerHTML = active.length
-      ? active.map(([n,{score:s,direction:d}]) => buildBotCard(n, allBots[n], s, d)).join('')
+      ? active.map(([n,{score:s,direction:d}]) => buildBotCard(n, allBots[n], s, d, symProvider[n]||'Binance')).join('')
       : `<div class="empty">No asset has reached score ${CFG.SCORE_BOT_MIN} yet.<br><small>Watch for: 4H sweep or STRONG BUY/SELL pressure to upgrade score.</small></div>`;
 
     document.getElementById('grid-risk-notice').innerHTML = renderCryptoRiskNotice(allMetrics);
@@ -283,7 +283,7 @@ async function fetchAndDisplay() {
   const sorted = Object.entries(allScores).sort((a,b) => b[1].score - a[1].score);
   const active = sorted.filter(([n]) => allBots[n]);
   document.getElementById('bot-grid').innerHTML = active.length
-    ? active.map(([n,{score,direction}]) => buildBotCard(n, allBots[n], score, direction)).join('')
+    ? active.map(([n,{score,direction}]) => buildBotCard(n, allBots[n], score, direction, symProvider[n]||'Binance')).join('')
     : `<div class="empty">No asset has reached score ${CFG.SCORE_BOT_MIN} yet.<br><small>Watch for: 4H sweep or STRONG BUY/SELL pressure to upgrade score.</small></div>`;
 
   // ── Render grid bot advisor ────────────────────────────────────
