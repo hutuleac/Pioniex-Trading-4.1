@@ -188,7 +188,7 @@ async function addAndRenderTicker(name, symbol) {
       : `<div class="empty">No asset has reached score ${CFG.SCORE_BOT_MIN} yet.<br><small>Watch for: 4H sweep or STRONG BUY/SELL pressure to upgrade score.</small></div>`;
 
     document.getElementById('grid-risk-notice').innerHTML = renderCryptoRiskNotice(allMetrics);
-    document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, allSignals, getGridCapital());
+    document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, allSignals, getGridCapital(), symProvider);
 
     if (window._attachHeaderTips) window._attachHeaderTips();
   } catch(e) {
@@ -289,7 +289,7 @@ async function fetchAndDisplay() {
   // ── Render grid bot advisor ────────────────────────────────────
   lastAllMetrics = allMetrics;
   document.getElementById('grid-risk-notice').innerHTML = renderCryptoRiskNotice(allMetrics);
-  document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, allSignals, getGridCapital());
+  document.getElementById('grid-panel').innerHTML       = renderGridPanel(allMetrics, allSignals, getGridCapital(), symProvider);
 
   // Wire copy buttons (after innerHTML is set)
   document.querySelectorAll('.grid-copy-btn').forEach(btn => {

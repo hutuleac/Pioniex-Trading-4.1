@@ -253,7 +253,7 @@ export function renderCryptoRiskNotice(allMetrics) {
 }
 
 // ── Grid Bot Panel (per-ticker cards) ────────────────────────────
-export function renderGridPanel(allMetrics, allSignals, capital) {
+export function renderGridPanel(allMetrics, allSignals, capital, symProvider = {}) {
   const cards = Object.entries(allMetrics).map(([name, m]) => {
     if (!m || !m.gridViability) return '';
     const v      = m.gridViability;
@@ -369,9 +369,11 @@ export function renderGridPanel(allMetrics, allSignals, capital) {
       </div>
     </div>`;
 
+    const tvExG   = (symProvider[name]||'Binance')==='Bybit' ? 'BYBIT' : 'BINANCE';
+    const tvLinkG = `<a href="https://www.tradingview.com/chart/?symbol=${tvExG}%3A${name}USDT.P" target="_blank" rel="noopener" class="tv-link">${name}</a>`;
     return `<div class="grid-card">
       <div class="grid-card-head">
-        <span class="grid-ticker">${name}</span>
+        <span class="grid-ticker">${tvLinkG}</span>
         <span class="grid-price">$${fmt(m.price,2)}</span>
         ${badge}
         ${dirBadge}
